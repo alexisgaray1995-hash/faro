@@ -9,3 +9,5 @@ public/sw.js.map
 public/swe-worker-*.js
 next-env.d.ts
 *.pmtiles
+supabase/.temp
+supabase/.branches

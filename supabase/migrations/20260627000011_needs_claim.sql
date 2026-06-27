@@ -13,7 +13,6 @@ comment on column public.needs.claimed_by is
 
 create index needs_claimed_by_idx on public.needs (claimed_by);
 
--- ponytail: no guard trigger. The existing "needs: responders update" policy
--- lets any responder set claimed_by, so a crafted API call could steal a claim.
--- Acceptable for a trusted responder team; add a guard trigger (mirror
--- guard_needs_verification) if claim-stealing ever becomes a real problem.
+-- Claim-stealing is blocked by guard_needs_claim (see the next migration):
+-- a responder may only claim for themselves and only change a claim they hold;
+-- coordinators may reassign.

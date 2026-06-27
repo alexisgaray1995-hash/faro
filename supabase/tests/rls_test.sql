@@ -4,7 +4,7 @@
 -- trust. If any of these fail, we are violating a Golden Rule — treat as a P0.
 
 begin;
-select plan(20);
+select plan(24);
 
 -- ---------------------------------------------------------------------------
 -- Golden Rule 2: "I need help" is never behind a login.
@@ -152,6 +152,16 @@ select is(
   'a volunteer cannot read the audit log'
 );
 
+-- Guard: a volunteer cannot claim a need on someone else's behalf (only for
+-- themselves) — blocks one form of claim-stealing at the trigger.
+select throws_ok(
+  $$update public.needs
+      set claimed_by = '11111111-1111-1111-1111-111111111111'
+      where description = 'prueba anónima' and claimed_by is null$$,
+  'you can only claim a need for yourself',
+  'a volunteer cannot claim a need for another responder'
+);
+
 -- Claim ownership: a volunteer grabs an unclaimed need off the queue.
 select lives_ok(
   $$update public.needs set status = 'in_progress',
@@ -191,6 +201,14 @@ select lives_ok(
   $$update public.profiles set role = 'coordinator'
       where id = '22222222-2222-2222-2222-222222222222'$$,
   'a coordinator can promote a volunteer'
+);
+
+-- ... and may reassign a claim held by someone else (the guard's override path).
+select lives_ok(
+  $$update public.needs
+      set claimed_by = '11111111-1111-1111-1111-111111111111'
+      where description = 'prueba anónima'$$,
+  'a coordinator can reassign a claim held by another responder'
 );
 
 reset role;
