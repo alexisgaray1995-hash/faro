@@ -129,6 +129,7 @@ const es = {
     closed: "Cerrado",
     viewMap: "Ver en mapa",
     teamAccess: "Acceso para voluntarios y equipos",
+    exportData: "Descargar datos (CSV / GeoJSON)",
   },
   acceso: {
     title: "Acceso para equipos",
@@ -257,6 +258,7 @@ const en = {
     closed: "Closed",
     viewMap: "View on map",
     teamAccess: "Access for volunteers and teams",
+    exportData: "Download data (CSV / GeoJSON)",
   },
   acceso: {
     title: "Team access",

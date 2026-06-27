@@ -33,7 +33,23 @@ export default async function MapaPage() {
       </header>
       <FindHelp t={t.find} locale={locale} />
 
-      <footer className="mt-auto pt-4 text-sm text-muted">
+      <footer className="mt-auto flex flex-col gap-2 pt-4 text-sm text-muted">
+        <details>
+          <summary className="cursor-pointer">{t.find.exportData}</summary>
+          <ul className="mt-2 flex flex-col gap-1 pl-1">
+            {(["resources", "hazards", "needs"] as const).map((ds) => (
+              <li key={ds} className="flex gap-3">
+                <span className="w-20">{t.find.tabs[ds]}</span>
+                <a className="underline" href={`/api/export/${ds}?format=csv`}>
+                  CSV
+                </a>
+                <a className="underline" href={`/api/export/${ds}`}>
+                  GeoJSON
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
         <Link href="/panel" className="underline">
           {t.find.teamAccess}
         </Link>
