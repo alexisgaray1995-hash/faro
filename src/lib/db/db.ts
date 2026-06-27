@@ -2,7 +2,12 @@ import Dexie, { type Table } from "dexie";
 
 // Tables an anonymous citizen can write to while offline. Each maps to a
 // Supabase table with a client_token for idempotent replay.
-export type OutboxTable = "needs" | "hazards" | "missing_persons";
+export type OutboxTable =
+  | "needs"
+  | "hazards"
+  | "missing_persons"
+  | "resources"
+  | "resource_supplies";
 
 export interface OutboxItem {
   id?: number;
