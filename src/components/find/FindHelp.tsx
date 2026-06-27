@@ -25,6 +25,8 @@ import {
   type PublicResource,
 } from "@/lib/data/publicData";
 import { timeAgo, VERIFICATION_LABEL } from "@/lib/format";
+import { SupplyChips } from "@/components/find/SupplyChips";
+import type { SupplyLine } from "@/lib/supply";
 
 type Tab = "resources" | "hazards" | "needs";
 
@@ -59,6 +61,7 @@ function Card({
   lng,
   locale,
   mapLabel,
+  supplies,
 }: {
   title: string;
   subtitle?: string | null;
@@ -68,6 +71,7 @@ function Card({
   lng: number;
   locale: Locale;
   mapLabel: string;
+  supplies?: SupplyLine[] | null;
 }) {
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
@@ -87,6 +91,7 @@ function Card({
           {mapLabel}
         </a>
       </div>
+      {supplies && <SupplyChips supplies={supplies} />}
     </li>
   );
 }
@@ -189,6 +194,7 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
                 lng={r.lng}
                 locale={locale}
                 mapLabel={t.viewMap}
+                supplies={r.supplies}
               />
             ))}
           {tab === "hazards" &&
