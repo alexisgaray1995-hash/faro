@@ -74,8 +74,9 @@ results of the RLS audit.
 
 Next.js 16 (App Router, TypeScript strict) · React 19 · PWA via Serwist
 (Workbox) · Dexie/IndexedDB outbox for offline writes · Supabase (Postgres, Auth,
-RLS) · Tailwind CSS · custom cookie-based i18n (es/en, no dependency) · maps via
-OpenStreetMap links. **Optional, fully self-hosted, zero-API-cost** add-ons:
+RLS) · Tailwind CSS · custom cookie-based i18n (es/en, no dependency) · an
+interactive Leaflet map on OpenStreetMap tiles (no API key), with Google Maps
+directions deep-links. **Optional, fully self-hosted, zero-API-cost** add-ons:
 Ollama (AI triage suggestions) and OSRM (responder ETAs). Free tiers throughout.
 
 ### Status

@@ -12,6 +12,10 @@ threat model and a hardened Content-Security-Policy land in milestone **M8**.
 - **Least privilege.** Row-Level Security (RLS) is the primary access control,
   enforced in Postgres (added in M1) — not just in the UI.
 - **No tracking, no ads, ever.** No third-party analytics or advertising SDKs.
+  Two unavoidable third-party requests exist and are by design: map tiles load
+  from OpenStreetMap (`tile.openstreetmap.org`), which sees the viewport (rough
+  area, not identity), and the "Directions" link opens Google Maps only on an
+  explicit tap. No user data, report content, or PII is sent to either.
 
 ## Sensitive data handling (design intent — enforced from M1)
 
