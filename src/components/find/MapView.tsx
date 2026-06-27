@@ -10,9 +10,9 @@ import { fetchResources, type PublicResource } from "@/lib/data/publicData";
 
 // A real, visual map of help-points (water, food, shelter, clinics) so people can
 // SEE where to head. Leaflet + OpenStreetMap tiles: free, no API key, no tracking
-// (Golden Rules: free, protect people). ponytail: tiles need network; the cached
-// resource list below still works offline. Add a service-worker tile cache only
-// if offline map panning becomes a real ask.
+// (Golden Rules: free, protect people). Tiles viewed online are cached by the
+// service worker (osm-tiles in sw.ts), so an already-loaded area still renders
+// offline; the cached resource list below works offline regardless.
 const EMOJI: Record<PublicResource["type"], string> = {
   water_point: "💧",
   food_distribution: "🍲",
@@ -58,6 +58,10 @@ export function MapView({ t, locale }: { t: Dict["find"]; locale: Locale }) {
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
+        // Fetch tiles with CORS so the service worker caches them as clean 200s
+        // (see osm-tiles cache in sw.ts) — that's what makes the map work
+        // offline once an area has been viewed.
+        crossOrigin: true,
       }).addTo(map);
 
       // Center on the user if they allow it, and drop a "you are here" pin.

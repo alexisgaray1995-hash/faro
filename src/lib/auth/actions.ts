@@ -147,6 +147,37 @@ export async function releaseNeed(formData: FormData) {
   revalidatePath("/panel");
 }
 
+// --- Responder registry (coordinator-only) -------------------------------
+// The roster lives in public.profiles. RLS ("profiles: coordinators manage")
+// enforces that only a coordinator can change another responder's role or
+// active flag, so a non-coordinator calling these just no-ops against zero
+// rows. We still pass the value through plainly; the database is the guard.
+
+const ROLES = ["volunteer", "coordinator"] as const;
+
+export async function setResponderRole(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const role = String(formData.get("role") ?? "");
+  if (!id || !ROLES.includes(role as (typeof ROLES)[number])) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("profiles")
+    .update({ role: role as (typeof ROLES)[number] })
+    .eq("id", id);
+  revalidatePath("/coordinador");
+}
+
+export async function setResponderActive(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const active = formData.get("active") === "true";
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ is_active: active }).eq("id", id);
+  revalidatePath("/coordinador");
+}
+
 const SETTABLE = ["in_progress", "resolved", "open"] as const;
 
 export async function updateNeedStatus(formData: FormData) {

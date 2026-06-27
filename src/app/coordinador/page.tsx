@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { assignNeed, signOut, verifyNeed } from "@/lib/auth/actions";
+import {
+  assignNeed,
+  setResponderActive,
+  setResponderRole,
+  signOut,
+  verifyNeed,
+} from "@/lib/auth/actions";
 import { LiveNeeds } from "@/components/panel/LiveNeeds";
 import { triageNeeds, type Triage } from "@/lib/ai/triage";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +24,7 @@ export const metadata: Metadata = { title: "Panel de coordinación" };
 type Need = Database["public"]["Tables"]["needs"]["Row"];
 type Profile = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "display_name" | "role"
+  "id" | "display_name" | "role" | "is_active" | "organization"
 >;
 type Assignment = Pick<
   Database["public"]["Tables"]["assignments"]["Row"],
@@ -152,11 +158,87 @@ function NeedCard({
   );
 }
 
+// The responder registry: a coordinator sees the whole roster and manages it —
+// promote a trusted volunteer to coordinator, or deactivate someone who's done.
+// Self-row actions are hidden so a coordinator can't lock themselves out.
+function RosterSection({ roster, meId }: { roster: Profile[]; meId: string }) {
+  return (
+    <details className="rounded-2xl border border-border bg-surface p-4">
+      <summary className="cursor-pointer font-semibold text-foreground">
+        Equipo de respuesta ({roster.length})
+      </summary>
+      <p className="mt-1 text-sm text-muted">
+        Promueve a coordinador a quien confíes; desactiva a quien ya no esté
+        disponible.
+      </p>
+      <ul className="mt-3 flex flex-col gap-2">
+        {roster.map((r) => {
+          const isMe = r.id === meId;
+          const isCoordinator = r.role === "coordinator";
+          return (
+            <li
+              key={r.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">
+                  {r.display_name}
+                  {isMe && <span className="text-muted"> · tú</span>}
+                </p>
+                <p className="text-xs text-muted">
+                  {isCoordinator ? "Coordinador" : "Voluntario"}
+                  {r.organization && ` · ${r.organization}`}
+                  {!r.is_active && " · inactivo"}
+                </p>
+              </div>
+              {!isMe && (
+                <div className="flex flex-wrap gap-2">
+                  <form action={setResponderRole}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input
+                      type="hidden"
+                      name="role"
+                      value={isCoordinator ? "volunteer" : "coordinator"}
+                    />
+                    <button
+                      type="submit"
+                      className="min-h-[44px] rounded-xl border border-border bg-surface px-3 text-sm font-medium text-foreground"
+                    >
+                      {isCoordinator ? "Quitar coord." : "Hacer coord."}
+                    </button>
+                  </form>
+                  <form action={setResponderActive}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input
+                      type="hidden"
+                      name="active"
+                      value={r.is_active ? "false" : "true"}
+                    />
+                    <button
+                      type="submit"
+                      className="min-h-[44px] rounded-xl border border-border bg-surface px-3 text-sm font-medium text-foreground"
+                    >
+                      {r.is_active ? "Desactivar" : "Activar"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 export default async function CoordinadorPage() {
   const supabase = await createClient();
 
   // Login is enforced by middleware; this enforces the coordinator role.
-  const { data: me } = await supabase.from("profiles").select("role").single();
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .single();
   if (me?.role !== "coordinator") {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
@@ -174,7 +256,7 @@ export default async function CoordinadorPage() {
     );
   }
 
-  const [{ data: needsData }, { data: respData }, { data: asgData }] =
+  const [{ data: needsData }, { data: rosterData }, { data: asgData }] =
     await Promise.all([
       supabase
         .from("needs")
@@ -183,16 +265,18 @@ export default async function CoordinadorPage() {
         .order("urgency")
         .order("created_at", { ascending: false })
         .limit(200),
+      // The whole responder roster (incl. inactive) — drives the registry below;
+      // active ones feed the assignment dropdown.
       supabase
         .from("profiles")
-        .select("id, display_name, role")
-        .eq("is_active", true)
+        .select("id, display_name, role, is_active, organization")
         .order("display_name"),
       supabase.from("assignments").select("need_id, responder_id"),
     ]);
 
   const needs = (needsData ?? []) as Need[];
-  const responders = (respData ?? []) as Profile[];
+  const roster = (rosterData ?? []) as Profile[];
+  const responders = roster.filter((r) => r.is_active);
   const assignments = (asgData ?? []) as Assignment[];
 
   // No-ops to an empty map when Ollama isn't running, so the dashboard is
@@ -251,6 +335,8 @@ export default async function CoordinadorPage() {
           ))}
         </ul>
       )}
+
+      {roster.length > 0 && <RosterSection roster={roster} meId={me.id} />}
     </main>
   );
 }
