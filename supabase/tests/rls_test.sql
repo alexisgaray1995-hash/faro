@@ -4,7 +4,7 @@
 -- trust. If any of these fail, we are violating a Golden Rule — treat as a P0.
 
 begin;
-select plan(24);
+select plan(31);
 
 -- ---------------------------------------------------------------------------
 -- Golden Rule 2: "I need help" is never behind a login.
@@ -209,6 +209,68 @@ select lives_ok(
       set claimed_by = '11111111-1111-1111-1111-111111111111'
       where description = 'prueba anónima'$$,
   'a coordinator can reassign a claim held by another responder'
+);
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Supplies (subsystem #1): responder authoring + anon-safe exposure.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+select lives_ok(
+  $$insert into public.resources (id, type, name, lat, lng, created_by)
+    values ('44444444-4444-4444-4444-444444444444', 'water_point', 'Oasis Centro',
+            10.5, -66.9, '22222222-2222-2222-2222-222222222222')$$,
+  'a responder can publish a resource to attach supplies to'
+);
+
+select lives_ok(
+  $$insert into public.resource_supplies (resource_id, category, status, updated_by)
+    values ('44444444-4444-4444-4444-444444444444', 'water', 'ok',
+            '22222222-2222-2222-2222-222222222222')$$,
+  'a responder can add a supply line'
+);
+
+select throws_ok(
+  $$insert into public.resource_supplies (resource_id, category, status, updated_by)
+    values ('44444444-4444-4444-4444-444444444444', 'water', 'low',
+            '22222222-2222-2222-2222-222222222222')$$,
+  '23505',
+  null,
+  'one supply line per category (unique resource_id, category)'
+);
+
+select lives_ok(
+  $$update public.resource_supplies set status = 'low'
+      where resource_id = '44444444-4444-4444-4444-444444444444'
+        and category = 'water'$$,
+  'a responder can update a supply line'
+);
+
+reset role;
+set local role anon;
+
+select throws_ok(
+  $$select * from public.resource_supplies$$,
+  '42501',
+  null,
+  'anon cannot read the resource_supplies base table (PII boundary)'
+);
+
+select ok(
+  (select supplies is not null
+     from public.public_resources
+     where id = '44444444-4444-4444-4444-444444444444'),
+  'public_resources exposes a supplies aggregate for a stocked point'
+);
+
+select throws_ok(
+  $$select contact_phone from public.public_resources$$,
+  '42703',
+  null,
+  'public_resources still hides operator contact (no contact column)'
 );
 
 reset role;
