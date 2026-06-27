@@ -42,4 +42,9 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/panel/:path*", "/coordinador/:path*"] };
+// /api/route proxies to the internal OSRM box; gate it to logged-in responders
+// so it can't be used as an open routing proxy. /api/export stays public (it's
+// intentionally open humanitarian data from the PII-free views).
+export const config = {
+  matcher: ["/panel/:path*", "/coordinador/:path*", "/api/route"],
+};

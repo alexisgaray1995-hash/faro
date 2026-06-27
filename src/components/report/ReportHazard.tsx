@@ -100,6 +100,7 @@ export function ReportHazard({
           className="rounded-xl border border-border bg-surface p-3 text-foreground"
           placeholder={t.describePlaceholder}
         />
+        <span className="text-sm text-muted">⚠️ {t.describePublic}</span>
       </label>
 
       <LocationField

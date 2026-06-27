@@ -56,6 +56,7 @@ const es = {
     severity: "Gravedad",
     describe: "Describe el peligro (opcional)",
     describePlaceholder: "Ej: cables caídos cruzando la calle",
+    describePublic: "Este aviso es público. No incluyas datos personales.",
     addressPlaceholder: "Referencia: calle, edificio, punto conocido",
     submit: "Enviar reporte",
     needLocation: "Necesitamos la ubicación del peligro.",
@@ -92,6 +93,8 @@ const es = {
     howMany: "¿Cuántas personas?",
     describe: "Describe la situación (opcional)",
     describePlaceholder: "Ej: personas atrapadas en el segundo piso",
+    describePublic:
+      "Este mensaje es público. No pongas tu nombre, teléfono ni dirección aquí — para eso están los datos de contacto abajo.",
     yourLocation: "Tu ubicación",
     locating: "Obteniendo ubicación…",
     locationReady: "✓ Ubicación lista — actualizar",
@@ -187,6 +190,7 @@ const en = {
     severity: "Severity",
     describe: "Describe the hazard (optional)",
     describePlaceholder: "E.g. downed power lines across the street",
+    describePublic: "This report is public. Don't include personal details.",
     addressPlaceholder: "Reference: street, building, known landmark",
     submit: "Send report",
     needLocation: "We need the hazard's location.",
@@ -222,6 +226,8 @@ const en = {
     howMany: "How many people?",
     describe: "Describe the situation (optional)",
     describePlaceholder: "E.g. people trapped on the second floor",
+    describePublic:
+      "This message is public. Don't put your name, phone, or address here — use the contact fields below for that.",
     yourLocation: "Your location",
     locating: "Getting location…",
     locationReady: "✓ Location ready — update",
