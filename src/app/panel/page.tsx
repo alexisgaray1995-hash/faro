@@ -7,6 +7,7 @@ import {
   signOut,
   updateNeedStatus,
 } from "@/lib/auth/actions";
+import { LiveNeeds } from "@/components/panel/LiveNeeds";
 import { RouteEta } from "@/components/panel/RouteEta";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -175,6 +176,7 @@ export default async function PanelPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
+      <LiveNeeds />
       <div className="flex items-center justify-between">
         <Link
           href="/"

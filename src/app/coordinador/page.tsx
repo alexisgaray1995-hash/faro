@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { assignNeed, signOut, verifyNeed } from "@/lib/auth/actions";
+import { LiveNeeds } from "@/components/panel/LiveNeeds";
 import { triageNeeds, type Triage } from "@/lib/ai/triage";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -208,6 +209,7 @@ export default async function CoordinadorPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
+      <LiveNeeds />
       <div className="flex items-center justify-between">
         <Link
           href="/"
