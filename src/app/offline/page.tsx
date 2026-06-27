@@ -7,10 +7,10 @@ export const metadata: Metadata = { title: "Sin conexión" };
 // Served by the service worker when a page isn't cached and there's no network.
 export default function OfflinePage() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-start gap-6 px-5 py-8">
+    <main className="beacon-aura mx-auto flex min-h-dvh w-full max-w-md flex-col items-start gap-6 px-5 py-8">
       <Brand />
       <div className="rounded-2xl border border-border bg-surface p-6">
-        <h1 className="text-2xl font-bold text-foreground">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
           Estás sin conexión
         </h1>
         <p className="mt-3 text-muted">

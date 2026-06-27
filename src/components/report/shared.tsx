@@ -17,7 +17,7 @@ export function ReportResult({
       <p className="text-4xl" aria-hidden>
         {result === "sent" ? "✅" : "📨"}
       </p>
-      <h2 className="mt-3 text-xl font-bold text-foreground">
+      <h2 className="mt-3 font-display text-xl font-semibold tracking-tight text-foreground">
         {result === "sent" ? t.sentTitle : t.queuedTitle}
       </h2>
       <p className="mt-2 text-muted">

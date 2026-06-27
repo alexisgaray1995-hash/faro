@@ -223,7 +223,9 @@ export default async function CoordinadorPage() {
       </div>
 
       <header>
-        <h1 className="text-2xl font-bold text-foreground">Coordinación</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          Coordinación
+        </h1>
         <p className="mt-1 text-muted">
           Verifica los pedidos y asigna equipos. Verificar es una acción
           consecuente: confirma los datos antes.

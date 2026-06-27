@@ -28,7 +28,9 @@ export default async function SosPage() {
         </div>
       </div>
       <header>
-        <h1 className="text-2xl font-bold text-foreground">{t.sos.title}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          {t.sos.title}
+        </h1>
         <p className="mt-1 text-muted">{t.sos.subtitle}</p>
       </header>
       <SosForm t={t.sos} locale={locale} />
