@@ -106,6 +106,47 @@ export async function assignNeed(formData: FormData) {
   revalidatePath("/coordinador");
 }
 
+// Self-claim a need off the queue. The .is("claimed_by", null) makes this
+// atomic: if two responders tap "Tomar" at once, Postgres lets exactly one
+// match the row, so they can't both grab the same person.
+export async function claimNeed(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("needs")
+    .update({ status: "in_progress", claimed_by: user.id })
+    .eq("id", id)
+    .is("claimed_by", null);
+  revalidatePath("/panel");
+}
+
+// Release your own claim back to the queue. Scoped to claimed_by = self so you
+// can only let go of what's yours.
+export async function releaseNeed(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("needs")
+    .update({ status: "open", claimed_by: null })
+    .eq("id", id)
+    .eq("claimed_by", user.id);
+  revalidatePath("/panel");
+}
+
 const SETTABLE = ["in_progress", "resolved", "open"] as const;
 
 export async function updateNeedStatus(formData: FormData) {

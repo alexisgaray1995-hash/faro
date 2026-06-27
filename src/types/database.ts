@@ -268,6 +268,7 @@ export type Database = {
         Row: {
           address_note: string | null;
           category: Database["public"]["Enums"]["need_category"];
+          claimed_by: string | null;
           client_token: string;
           contact_name: string | null;
           contact_phone: string | null;
@@ -288,6 +289,7 @@ export type Database = {
         Insert: {
           address_note?: string | null;
           category: Database["public"]["Enums"]["need_category"];
+          claimed_by?: string | null;
           client_token?: string;
           contact_name?: string | null;
           contact_phone?: string | null;
@@ -308,6 +310,7 @@ export type Database = {
         Update: {
           address_note?: string | null;
           category?: Database["public"]["Enums"]["need_category"];
+          claimed_by?: string | null;
           client_token?: string;
           contact_name?: string | null;
           contact_phone?: string | null;
@@ -326,6 +329,13 @@ export type Database = {
           verified_by?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "needs_claimed_by_fkey";
+            columns: ["claimed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "needs_verified_by_fkey";
             columns: ["verified_by"];

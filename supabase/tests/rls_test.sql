@@ -152,6 +152,24 @@ select is(
   'a volunteer cannot read the audit log'
 );
 
+-- Claim ownership: a volunteer grabs an unclaimed need off the queue.
+select lives_ok(
+  $$update public.needs set status = 'in_progress',
+      claimed_by = '22222222-2222-2222-2222-222222222222'
+      where description = 'prueba anónima' and claimed_by is null$$,
+  'a volunteer can self-claim an unclaimed need'
+);
+
+-- Atomicity: a second claim with the claimed_by-is-null guard touches nothing,
+-- so two responders can't grab the same person.
+update public.needs set claimed_by = '11111111-1111-1111-1111-111111111111'
+  where description = 'prueba anónima' and claimed_by is null;
+select is(
+  (select claimed_by from public.needs where description = 'prueba anónima'),
+  '22222222-2222-2222-2222-222222222222'::uuid,
+  'a claimed need cannot be stolen by a racing responder (atomic claim)'
+);
+
 reset role;
 
 -- ---------------------------------------------------------------------------

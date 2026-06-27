@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { signOut, updateNeedStatus } from "@/lib/auth/actions";
+import {
+  claimNeed,
+  releaseNeed,
+  signOut,
+  updateNeedStatus,
+} from "@/lib/auth/actions";
 import { RouteEta } from "@/components/panel/RouteEta";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -50,7 +55,35 @@ function StatusButton({
   );
 }
 
-function NeedCard({ n }: { n: Need }) {
+function ActionButton({
+  id,
+  action,
+  label,
+  primary,
+}: {
+  id: string;
+  action: (formData: FormData) => void;
+  label: string;
+  primary?: boolean;
+}) {
+  return (
+    <form action={action}>
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        className={`min-h-[44px] rounded-xl px-4 font-medium ${
+          primary
+            ? "bg-volunteer text-white"
+            : "border border-border bg-surface text-foreground"
+        }`}
+      >
+        {label}
+      </button>
+    </form>
+  );
+}
+
+function NeedCard({ n, mine }: { n: Need; mine: boolean }) {
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
@@ -86,6 +119,9 @@ function NeedCard({ n }: { n: Need }) {
         <span>{timeAgo(n.created_at)}</span>
         <span>{VERIFICATION_LABEL[n.verification]}</span>
         <span>{NEED_STATUS_LABEL[n.status]}</span>
+        {mine && (
+          <span className="font-medium text-volunteer">Tomado por ti</span>
+        )}
         <a
           href={`https://www.openstreetmap.org/?mlat=${n.lat}&mlon=${n.lng}#map=17/${n.lat}/${n.lng}`}
           target="_blank"
@@ -98,10 +134,10 @@ function NeedCard({ n }: { n: Need }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {n.status === "open" && (
-          <StatusButton id={n.id} status="in_progress" label="Tomar" primary />
+        {!n.claimed_by && (
+          <ActionButton id={n.id} action={claimNeed} label="Tomar" primary />
         )}
-        {n.status === "in_progress" && (
+        {mine && (
           <>
             <StatusButton
               id={n.id}
@@ -109,7 +145,7 @@ function NeedCard({ n }: { n: Need }) {
               label="Marcar resuelto"
               primary
             />
-            <StatusButton id={n.id} status="open" label="Liberar" />
+            <ActionButton id={n.id} action={releaseNeed} label="Liberar" />
           </>
         )}
       </div>
@@ -119,10 +155,18 @@ function NeedCard({ n }: { n: Need }) {
 
 export default async function PanelPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Show what's available (unclaimed) plus what's mine — hide needs another
+  // responder already grabbed so two people don't work the same person.
+  const query = supabase
     .from("needs")
     .select("*")
-    .in("status", ["open", "in_progress"])
+    .in("status", ["open", "in_progress"]);
+  if (user) query.or(`claimed_by.is.null,claimed_by.eq.${user.id}`);
+  const { data, error } = await query
     .order("urgency")
     .order("created_at", { ascending: false })
     .limit(200);
@@ -166,7 +210,7 @@ export default async function PanelPage() {
       {needs.length > 0 && (
         <ul className="flex flex-col gap-3">
           {needs.map((n) => (
-            <NeedCard key={n.id} n={n} />
+            <NeedCard key={n.id} n={n} mine={n.claimed_by === user?.id} />
           ))}
         </ul>
       )}
