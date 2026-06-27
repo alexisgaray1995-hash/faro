@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Brand } from "@/components/ui/Brand";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { RoleButton } from "@/components/ui/RoleButton";
@@ -31,6 +33,21 @@ export default async function HomePage() {
         {ROLES.map((entry) => (
           <RoleButton key={entry.role} entry={entry} locale={locale} />
         ))}
+      </nav>
+
+      <nav aria-label={t.home.reportLabel} className="flex flex-col gap-2">
+        <Link
+          href="/peligro"
+          className="min-h-[44px] rounded-xl border border-border bg-surface px-4 py-2.5 font-medium text-foreground"
+        >
+          {t.home.reportHazard}
+        </Link>
+        <Link
+          href="/desaparecido"
+          className="min-h-[44px] rounded-xl border border-border bg-surface px-4 py-2.5 font-medium text-foreground"
+        >
+          {t.home.reportMissing}
+        </Link>
       </nav>
 
       <footer className="mt-auto text-sm text-muted">

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Refresh the session and gate responder routes. The matcher only runs this on
 // protected paths, so public/offline pages (SOS, map) never depend on it.
 // ponytail: matcher-scoped guard; widen the matcher when more routes need auth.
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

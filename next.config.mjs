@@ -9,12 +9,20 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV !== "production",
 });
 
-// Baseline security headers (Golden Rule #4). A strict CSP is added in the
-// M8 hardening pass; geolocation is intentionally allowed for GPS-based SOS.
+// Baseline security headers (Golden Rule #4). Geolocation is intentionally
+// allowed for GPS-based SOS.
+// ponytail: CSP here is the safe subset (clickjacking, base-tag and form
+// hijacking) that doesn't gate script/style loading — so it can't brick the
+// app. A full script-src nonce CSP needs runtime testing in a browser; add it
+// once there's a staging env to verify it against.
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  },
   {
     key: "Permissions-Policy",
     value: "geolocation=(self), microphone=(self), camera=()",
