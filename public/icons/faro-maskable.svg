@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Faro">
+  <!-- Full-bleed background for maskable safe zone -->
+  <rect width="512" height="512" fill="#0b1220" />
+  <!-- Content kept within the central 80% safe zone -->
+  <g transform="translate(256 256) scale(0.78) translate(-256 -256)">
+    <g fill="#f5b301" opacity="0.85">
+      <path d="M256 150 L120 92 L120 132 L256 178 Z" />
+      <path d="M256 150 L392 92 L392 132 L256 178 Z" />
+    </g>
+    <circle cx="256" cy="150" r="30" fill="#f5b301" />
+    <circle cx="256" cy="150" r="14" fill="#fff7d6" />
+    <path d="M224 184 H288 L300 400 H212 Z" fill="#e6edf6" />
+    <path d="M224 184 H288 L292 256 H220 Z" fill="#dc2626" opacity="0.9" />
+    <rect x="208" y="396" width="96" height="28" rx="8" fill="#cdd8e6" />
+    <rect x="188" y="420" width="136" height="20" rx="8" fill="#9fb0c4" />
+  </g>
+</svg>

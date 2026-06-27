@@ -13,6 +13,11 @@
 /.next/
 /out/
 
+# generated service worker (Serwist) — rebuilt by `npm run build`
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker-*.js
+
 # production
 /build
 
