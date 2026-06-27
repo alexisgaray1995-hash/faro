@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { signOut, updateNeedStatus } from "@/lib/auth/actions";
+import { RouteEta } from "@/components/panel/RouteEta";
 import { createClient } from "@/lib/supabase/server";
 import {
   NEED_CATEGORY_LABEL,
@@ -93,6 +94,7 @@ function NeedCard({ n }: { n: Need }) {
         >
           Ver en mapa
         </a>
+        <RouteEta lat={n.lat} lng={n.lng} />
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
