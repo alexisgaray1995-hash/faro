@@ -25,6 +25,12 @@ export default function MapaPage() {
         </p>
       </header>
       <FindHelp />
+
+      <footer className="mt-auto pt-4 text-sm text-muted">
+        <Link href="/panel" className="underline">
+          Acceso para voluntarios y equipos
+        </Link>
+      </footer>
     </main>
   );
 }

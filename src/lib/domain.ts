@@ -6,6 +6,15 @@ type Enums = Database["public"]["Enums"];
 
 export type NeedCategory = Enums["need_category"];
 export type Urgency = Enums["urgency"];
+export type NeedStatus = Enums["need_status"];
+
+export const NEED_STATUS_LABEL: Record<NeedStatus, string> = {
+  open: "Abierto",
+  in_progress: "En proceso",
+  resolved: "Resuelto",
+  cancelled: "Cancelado",
+  expired: "Expirado",
+};
 
 export const NEED_CATEGORIES: { value: NeedCategory; label: string }[] = [
   { value: "rescue", label: "Rescate" },
