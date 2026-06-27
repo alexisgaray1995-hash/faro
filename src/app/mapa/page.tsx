@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { FindHelp } from "@/components/find/FindHelp";
+import { MapView } from "@/components/find/MapView";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SyncStatus } from "@/components/ui/SyncStatus";
 import { getDict } from "@/lib/i18n";
@@ -31,6 +32,7 @@ export default async function MapaPage() {
         <h1 className="text-2xl font-bold text-foreground">{t.find.title}</h1>
         <p className="mt-1 text-muted">{t.find.intro}</p>
       </header>
+      <MapView t={t.find} locale={locale} />
       <FindHelp t={t.find} locale={locale} />
 
       <footer className="mt-auto flex flex-col gap-2 pt-4 text-sm text-muted">

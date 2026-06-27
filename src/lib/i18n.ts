@@ -133,6 +133,10 @@ const es = {
     viewMap: "Ver en mapa",
     teamAccess: "Acceso para voluntarios y equipos",
     exportData: "Descargar datos (CSV / GeoJSON)",
+    youAreHere: "Estás aquí",
+    directions: "Cómo llegar",
+    mapHint:
+      "El mapa necesita internet para cargar. La lista de abajo funciona sin conexión.",
   },
   acceso: {
     title: "Acceso para equipos",
@@ -265,6 +269,9 @@ const en = {
     viewMap: "View on map",
     teamAccess: "Access for volunteers and teams",
     exportData: "Download data (CSV / GeoJSON)",
+    youAreHere: "You are here",
+    directions: "Directions",
+    mapHint: "The map needs internet to load. The list below works offline.",
   },
   acceso: {
     title: "Team access",
