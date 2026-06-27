@@ -63,7 +63,8 @@ export function pinStatus(
   if (!supplies || supplies.length === 0) return "neutral";
   if (supplies.some((s) => s.status === "out" && CRITICAL.includes(s.category)))
     return "critical";
-  if (supplies.some((s) => s.status === "low" || s.status === "out")) return "low";
+  if (supplies.some((s) => s.status === "low" || s.status === "out"))
+    return "low";
   return "ok";
 }
 
