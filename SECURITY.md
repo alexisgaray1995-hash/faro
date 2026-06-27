@@ -1,8 +1,9 @@
 # Security & Privacy — Faro
 
 Faro handles data about people in danger. A leak can cost lives. This document
-describes how we minimize that risk. It evolves with the project; the full
-threat model and a hardened Content-Security-Policy land in milestone **M8**.
+describes how we minimize that risk. The table-by-table enforcement is in
+[`docs/DATA_MODEL.md`](./docs/DATA_MODEL.md); a hardened Content-Security-Policy
+is the next planned hardening step.
 
 ## Principles
 
@@ -10,14 +11,15 @@ threat model and a hardened Content-Security-Policy land in milestone **M8**.
 - **Minimize PII.** Asking for help is anonymous by default. Contact details and
   precise individual locations are optional and treated as sensitive.
 - **Least privilege.** Row-Level Security (RLS) is the primary access control,
-  enforced in Postgres (added in M1) — not just in the UI.
+  enforced in Postgres — not just in the UI — and proven by a 20-assertion pgTAP
+  suite (`supabase test db`).
 - **No tracking, no ads, ever.** No third-party analytics or advertising SDKs.
   Two unavoidable third-party requests exist and are by design: map tiles load
   from OpenStreetMap (`tile.openstreetmap.org`), which sees the viewport (rough
   area, not identity), and the "Directions" link opens Google Maps only on an
   explicit tap. No user data, report content, or PII is sent to either.
 
-## Sensitive data handling (design intent — enforced from M1)
+## Sensitive data handling (enforced in Postgres)
 
 - **Needs (SOS):** anyone, including anonymous users, may create one. Public reads
   exclude `contact` and blur/round or hide the exact `lat/lng` of an individual.

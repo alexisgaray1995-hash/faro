@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Fraunces } from "next/font/google";
 import "./globals.css";
 
 import { getLocale } from "@/lib/locale";
@@ -13,6 +14,15 @@ const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+});
+// Display face for the Faro wordmark and headings — a warm, optical serif that
+// reads as calm authority (a beacon, not a banner). Self-hosted at build by
+// next/font, so it works offline. Body stays Geist for small-screen legibility.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  axes: ["opsz", "SOFT"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -46,7 +56,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} font-sans antialiased`}
       >
         {children}
       </body>

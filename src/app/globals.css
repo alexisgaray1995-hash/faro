@@ -36,6 +36,45 @@ body {
   background: var(--background);
 }
 
+/* Faro's signature: a soft amber beacon glow bleeding from the top, like a
+   lighthouse over deep water. CSS-only, no images — cheap and offline-safe. */
+.beacon-aura {
+  position: relative;
+  isolation: isolate;
+}
+.beacon-aura::before {
+  content: "";
+  position: absolute;
+  inset: -10% -20% auto -20%;
+  height: 60%;
+  z-index: -1;
+  background: radial-gradient(
+    60% 80% at 50% 0%,
+    rgba(245, 179, 1, 0.18) 0%,
+    rgba(245, 179, 1, 0.06) 40%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+.dark .beacon-aura::before {
+  background: radial-gradient(
+    60% 80% at 50% 0%,
+    rgba(245, 179, 1, 0.22) 0%,
+    rgba(245, 179, 1, 0.08) 42%,
+    transparent 72%
+  );
+}
+
+/* Faint hairline under the wordmark beacon, a lit-horizon feel. */
+.beacon-rule {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 179, 1, 0.5),
+    transparent
+  );
+}
+
 /* Visible keyboard focus everywhere (a11y). Mouse clicks don't trigger it. */
 :focus-visible {
   outline: 3px solid #f5b301;

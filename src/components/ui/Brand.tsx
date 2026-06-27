@@ -18,11 +18,11 @@ export function Brand({
         className="h-12 w-12"
       />
       <div>
-        <p className="text-2xl font-bold tracking-tight text-foreground">
+        <p className="font-display text-2xl font-semibold leading-none tracking-tight text-foreground">
           Faro
         </p>
         {withTagline && tagline && (
-          <p className="text-sm text-muted">{tagline}</p>
+          <p className="mt-1 text-sm text-muted">{tagline}</p>
         )}
       </div>
     </div>

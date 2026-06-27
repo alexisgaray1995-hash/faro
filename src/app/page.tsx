@@ -31,7 +31,7 @@ export default async function HomePage() {
   const panel = await panelHref();
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-8 px-5 py-8">
+    <main className="beacon-aura mx-auto flex min-h-dvh w-full max-w-md flex-col gap-8 px-5 py-8">
       <header className="flex items-center justify-between gap-2">
         <Brand />
         <div className="flex items-center gap-2">
@@ -41,10 +41,11 @@ export default async function HomePage() {
       </header>
 
       <div>
-        <h1 className="text-balance text-3xl font-bold leading-tight text-foreground">
+        <h1 className="text-balance font-display text-4xl font-semibold leading-[1.1] tracking-tight text-foreground">
           {t.home.heading}
         </h1>
-        <p className="mt-2 text-muted">{t.home.intro}</p>
+        <div className="beacon-rule mt-4 h-px w-24" />
+        <p className="mt-4 text-pretty text-muted">{t.home.intro}</p>
       </div>
 
       {panel && (
@@ -77,8 +78,15 @@ export default async function HomePage() {
         </Link>
       </nav>
 
-      <footer className="mt-auto text-sm text-muted">
+      <footer className="mt-auto space-y-2 text-sm text-muted">
         <p>{t.home.footer}</p>
+        <p className="flex items-center gap-1.5 text-xs">
+          <span className="font-display font-semibold text-foreground">
+            Faro
+          </span>
+          <span aria-hidden>·</span>
+          <span>by Abby Systems</span>
+        </p>
       </footer>
     </main>
   );
