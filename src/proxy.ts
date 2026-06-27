@@ -46,5 +46,10 @@ export async function proxy(request: NextRequest) {
 // so it can't be used as an open routing proxy. /api/export stays public (it's
 // intentionally open humanitarian data from the PII-free views).
 export const config = {
-  matcher: ["/panel/:path*", "/coordinador/:path*", "/api/route"],
+  matcher: [
+    "/panel/:path*",
+    "/coordinador/:path*",
+    "/recursos/:path*",
+    "/api/route",
+  ],
 };

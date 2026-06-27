@@ -184,11 +184,16 @@ export default async function PanelPage() {
         >
           <span aria-hidden>←</span> Inicio
         </Link>
-        <form action={signOut}>
-          <button type="submit" className="text-sm text-muted underline">
-            Salir
-          </button>
-        </form>
+        <div className="flex items-center gap-4">
+          <Link href="/recursos" className="text-sm text-muted underline">
+            Recursos
+          </Link>
+          <form action={signOut}>
+            <button type="submit" className="text-sm text-muted underline">
+              Salir
+            </button>
+          </form>
+        </div>
       </div>
 
       <header>
