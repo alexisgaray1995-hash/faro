@@ -4,7 +4,7 @@
 -- trust. If any of these fail, we are violating a Golden Rule — treat as a P0.
 
 begin;
-select plan(15);
+select plan(20);
 
 -- ---------------------------------------------------------------------------
 -- Golden Rule 2: "I need help" is never behind a login.
@@ -84,6 +84,17 @@ select throws_ok(
   'anon cannot publish resources (responders only)'
 );
 
+-- Responder registry: anon cannot forge a responder profile. Self-registration
+-- goes through Supabase auth + the handle_new_user trigger (definer), never a
+-- direct insert — there is no anon insert policy on profiles.
+select throws_ok(
+  $$insert into public.profiles (id, role, display_name)
+    values ('33333333-3333-3333-3333-333333333333', 'coordinator', 'falso')$$,
+  '42501',
+  null,
+  'anon cannot insert a profile (no self-registered coordinators)'
+);
+
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -100,6 +111,29 @@ select lives_ok(
 select lives_ok(
   $$select * from public.missing_persons$$,
   'a volunteer can read missing_persons to help reunite people'
+);
+
+-- Responder registry: a volunteer sees the roster (to coordinate) ...
+select ok(
+  (select count(*) from public.profiles) >= 2,
+  'a volunteer can read the responder roster'
+);
+
+-- ... can edit their own profile ...
+select lives_ok(
+  $$update public.profiles set display_name = 'Voluntario Renombrado'
+      where id = '22222222-2222-2222-2222-222222222222'$$,
+  'a volunteer can update their own profile'
+);
+
+-- ... but cannot promote themselves to coordinator (Golden Rule 4: roles are
+-- coordinator-granted, never self-claimed; with_check pins role = app_role()).
+select throws_ok(
+  $$update public.profiles set role = 'coordinator'
+      where id = '22222222-2222-2222-2222-222222222222'$$,
+  '42501',
+  null,
+  'a volunteer cannot escalate their own role'
 );
 
 -- Golden Rule 3: only a human coordinator blesses trust. A volunteer cannot.
@@ -131,6 +165,14 @@ select lives_ok(
       set verification = 'verified'
       where description = 'prueba anónima'$$,
   'a coordinator can verify a need'
+);
+
+-- Responder registry: a coordinator manages the roster — promoting a volunteer
+-- is the intended, audited path to coordinator (never self-service).
+select lives_ok(
+  $$update public.profiles set role = 'coordinator'
+      where id = '22222222-2222-2222-2222-222222222222'$$,
+  'a coordinator can promote a volunteer'
 );
 
 reset role;
