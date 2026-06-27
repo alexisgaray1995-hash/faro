@@ -145,9 +145,27 @@ const es = {
       "Solo para voluntarios y coordinadores. Si necesitas ayuda, no hace falta cuenta:",
     askHelp: "pedir ayuda",
     error: "Correo o contraseña incorrectos. Intenta de nuevo.",
+    check: "Te enviamos un correo para confirmar tu cuenta. Revísalo y entra.",
     email: "Correo",
     password: "Contraseña",
     submit: "Entrar",
+    noAccount: "¿Eres voluntario nuevo?",
+    register: "Crear cuenta",
+  },
+  registro: {
+    title: "Crear cuenta de equipo",
+    back: "Inicio",
+    intro:
+      "Para voluntarios y rescatistas. Rápido y sin complicaciones. Si necesitas ayuda, no hace falta cuenta:",
+    askHelp: "pedir ayuda",
+    error:
+      "No se pudo crear la cuenta. Revisa el correo y la contraseña (mín. 8).",
+    name: "Tu nombre (opcional)",
+    email: "Correo",
+    password: "Contraseña (mín. 8)",
+    submit: "Crear cuenta",
+    haveAccount: "¿Ya tienes cuenta?",
+    signIn: "Entrar",
   },
 };
 
@@ -280,9 +298,28 @@ const en = {
       "For volunteers and coordinators only. If you need help, no account is required:",
     askHelp: "ask for help",
     error: "Wrong email or password. Try again.",
+    check:
+      "We sent you an email to confirm your account. Check it and sign in.",
     email: "Email",
     password: "Password",
     submit: "Sign in",
+    noAccount: "New volunteer?",
+    register: "Create account",
+  },
+  registro: {
+    title: "Create a team account",
+    back: "Home",
+    intro:
+      "For volunteers and rescuers. Fast and simple. If you need help, no account is required:",
+    askHelp: "ask for help",
+    error:
+      "Couldn't create the account. Check the email and password (min. 8).",
+    name: "Your name (optional)",
+    email: "Email",
+    password: "Password (min. 8)",
+    submit: "Create account",
+    haveAccount: "Already have an account?",
+    signIn: "Sign in",
   },
 } satisfies Dict;
 

@@ -19,6 +19,35 @@ export async function signIn(formData: FormData) {
   redirect(next);
 }
 
+export async function signUp(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const next = safeNext(formData.get("next"));
+
+  // Fast path: minimal validation, the rest is enforced by Supabase + the DB.
+  if (!email || password.length < 8) {
+    redirect(`/registro?error=1&next=${encodeURIComponent(next)}`);
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    // handle_new_user() reads display_name and creates a 'volunteer' profile.
+    options: { data: { display_name: displayName || undefined } },
+  });
+  if (error) {
+    redirect(`/registro?error=1&next=${encodeURIComponent(next)}`);
+  }
+  // If the project has email confirmation off, signUp returns a live session →
+  // straight into the panel. If on, there's no session yet → tell them to check
+  // their email. ponytail: no custom email flow; flip the Supabase setting for
+  // disaster-speed signups.
+  if (data.session) redirect(next);
+  redirect("/acceso?check=1");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

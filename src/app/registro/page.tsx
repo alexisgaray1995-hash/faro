@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
-import { signIn } from "@/lib/auth/actions";
+import { signUp } from "@/lib/auth/actions";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
 
-export const metadata: Metadata = { title: "Acceso para equipos" };
+export const metadata: Metadata = { title: "Crear cuenta de equipo" };
 
-export default async function AccesoPage({
+export default async function RegistroPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string; check?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error, next, check } = await searchParams;
+  const { error, next } = await searchParams;
   const locale = await getLocale();
-  const t = getDict(locale).acceso;
+  const t = getDict(locale).registro;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
@@ -40,16 +40,7 @@ export default async function AccesoPage({
         </p>
       </header>
 
-      {check && (
-        <p
-          role="status"
-          className="rounded-lg bg-volunteer/15 px-3 py-2 text-sm text-foreground"
-        >
-          {t.check}
-        </p>
-      )}
-
-      <form action={signIn} className="flex flex-col gap-4">
+      <form action={signUp} className="flex flex-col gap-4">
         {next && <input type="hidden" name="next" value={next} />}
 
         {error && (
@@ -60,6 +51,17 @@ export default async function AccesoPage({
             {t.error}
           </p>
         )}
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-foreground">
+          {t.name}
+          <input
+            type="text"
+            name="display_name"
+            maxLength={80}
+            autoComplete="name"
+            className="min-h-[52px] rounded-xl border border-border bg-surface px-3 text-foreground"
+          />
+        </label>
 
         <label className="flex flex-col gap-1 text-sm font-medium text-foreground">
           {t.email}
@@ -78,7 +80,8 @@ export default async function AccesoPage({
             type="password"
             name="password"
             required
-            autoComplete="current-password"
+            minLength={8}
+            autoComplete="new-password"
             className="min-h-[52px] rounded-xl border border-border bg-surface px-3 text-foreground"
           />
         </label>
@@ -92,14 +95,12 @@ export default async function AccesoPage({
       </form>
 
       <p className="text-sm text-muted">
-        {t.noAccount}{" "}
+        {t.haveAccount}{" "}
         <Link
-          href={
-            next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"
-          }
+          href={next ? `/acceso?next=${encodeURIComponent(next)}` : "/acceso"}
           className="underline"
         >
-          {t.register}
+          {t.signIn}
         </Link>
       </p>
     </main>
