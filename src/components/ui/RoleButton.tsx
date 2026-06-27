@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { RoleEntry } from "@/lib/constants";
+import type { Locale } from "@/lib/i18n";
 
 // Static class maps so Tailwind's JIT keeps these classes in the build.
 const COLOR_CLASSES: Record<RoleEntry["color"], string> = {
@@ -33,7 +34,13 @@ const ICONS: Record<RoleEntry["color"], ReactNode> = {
   ),
 };
 
-export function RoleButton({ entry }: { entry: RoleEntry }) {
+export function RoleButton({
+  entry,
+  locale,
+}: {
+  entry: RoleEntry;
+  locale: Locale;
+}) {
   return (
     <Link
       href={entry.href}
@@ -42,7 +49,9 @@ export function RoleButton({ entry }: { entry: RoleEntry }) {
       <span className="h-9 w-9 shrink-0" aria-hidden="true">
         {ICONS[entry.color]}
       </span>
-      <span className="text-xl font-semibold">{entry.labelEs}</span>
+      <span className="text-xl font-semibold">
+        {locale === "en" ? entry.labelEn : entry.labelEs}
+      </span>
     </Link>
   );
 }

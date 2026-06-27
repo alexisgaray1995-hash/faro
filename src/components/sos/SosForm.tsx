@@ -10,13 +10,23 @@ import {
   type NeedCategory,
   type Urgency,
 } from "@/lib/domain";
+import {
+  NEED_CATEGORY_EN,
+  URGENCY_EN,
+  type Dict,
+  type Locale,
+} from "@/lib/i18n";
 import { enqueue, flush } from "@/lib/sync/outbox";
 
 type Coords = { lat: number; lng: number };
 
 // Offline-first SOS form: we ALWAYS queue locally first (so a dropped connection
 // never loses a cry for help), then try to flush. No login required.
-export function SosForm() {
+export function SosForm({ t, locale }: { t: Dict["sos"]; locale: Locale }) {
+  const catLabel = (c: NeedCategory, es: string) =>
+    locale === "en" ? NEED_CATEGORY_EN[c] : es;
+  const urgLabel = (u: Urgency, es: string) =>
+    locale === "en" ? URGENCY_EN[u] : es;
   const [category, setCategory] = useState<NeedCategory>("rescue");
   const [urgency, setUrgency] = useState<Urgency>("high");
   const [people, setPeople] = useState(1);
@@ -33,9 +43,7 @@ export function SosForm() {
   function getLocation() {
     setLocError(null);
     if (!("geolocation" in navigator)) {
-      setLocError(
-        "Tu dispositivo no permite ubicación. Escribe una referencia abajo.",
-      );
+      setLocError(t.noGeo);
       return;
     }
     setLocating(true);
@@ -45,9 +53,7 @@ export function SosForm() {
         setLocating(false);
       },
       () => {
-        setLocError(
-          "No pudimos obtener tu ubicación. Escribe una referencia abajo.",
-        );
+        setLocError(t.geoFailed);
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -57,7 +63,7 @@ export function SosForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!coords) {
-      setLocError("Necesitamos tu ubicación para enviar ayuda.");
+      setLocError(t.needLocation);
       return;
     }
     setSubmitting(true);
@@ -84,20 +90,16 @@ export function SosForm() {
           {result === "sent" ? "✅" : "📨"}
         </p>
         <h2 className="mt-3 text-xl font-bold text-foreground">
-          {result === "sent"
-            ? "Ayuda solicitada"
-            : "Guardado — se enviará al volver el internet"}
+          {result === "sent" ? t.sentTitle : t.queuedTitle}
         </h2>
         <p className="mt-2 text-muted">
-          {result === "sent"
-            ? "Tu pedido llegó. Un equipo lo revisará y verificará."
-            : "Tu pedido está guardado en este teléfono y se enviará solo cuando haya conexión. Puedes cerrar la app."}
+          {result === "sent" ? t.sentBody : t.queuedBody}
         </p>
         <Link
           href="/"
           className="mt-6 inline-block rounded-full bg-beacon px-5 py-2.5 font-medium text-night"
         >
-          Volver al inicio
+          {t.backHome}
         </Link>
       </div>
     );
@@ -107,7 +109,7 @@ export function SosForm() {
     <form onSubmit={submit} className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 font-medium text-foreground">
-          ¿Qué necesitas?
+          {t.whatNeed}
         </legend>
         <div className="grid grid-cols-2 gap-2">
           {NEED_CATEGORIES.map((c) => (
@@ -122,14 +124,14 @@ export function SosForm() {
                   : "border-border bg-surface text-muted"
               }`}
             >
-              {c.label}
+              {catLabel(c.value, c.label)}
             </button>
           ))}
         </div>
       </fieldset>
 
       <label className="flex flex-col gap-2">
-        <span className="font-medium text-foreground">Urgencia</span>
+        <span className="font-medium text-foreground">{t.urgency}</span>
         <select
           value={urgency}
           onChange={(e) => setUrgency(e.target.value as Urgency)}
@@ -137,14 +139,14 @@ export function SosForm() {
         >
           {URGENCIES.map((u) => (
             <option key={u.value} value={u.value}>
-              {u.label}
+              {urgLabel(u.value, u.label)}
             </option>
           ))}
         </select>
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="font-medium text-foreground">¿Cuántas personas?</span>
+        <span className="font-medium text-foreground">{t.howMany}</span>
         <input
           type="number"
           inputMode="numeric"
@@ -157,32 +159,26 @@ export function SosForm() {
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="font-medium text-foreground">
-          Describe la situación (opcional)
-        </span>
+        <span className="font-medium text-foreground">{t.describe}</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
           rows={3}
           className="rounded-xl border border-border bg-surface p-3 text-foreground"
-          placeholder="Ej: personas atrapadas en el segundo piso"
+          placeholder={t.describePlaceholder}
         />
       </label>
 
       <div className="flex flex-col gap-2">
-        <span className="font-medium text-foreground">Tu ubicación</span>
+        <span className="font-medium text-foreground">{t.yourLocation}</span>
         <button
           type="button"
           onClick={getLocation}
           disabled={locating}
           className="min-h-[52px] rounded-xl border border-border bg-surface px-4 font-medium text-foreground disabled:opacity-60"
         >
-          {locating
-            ? "Obteniendo ubicación…"
-            : coords
-              ? "✓ Ubicación lista — actualizar"
-              : "📍 Usar mi ubicación"}
+          {locating ? t.locating : coords ? t.locationReady : t.useLocation}
         </button>
         {coords && (
           <p className="text-sm text-muted">
@@ -196,24 +192,22 @@ export function SosForm() {
           onChange={(e) => setAddress(e.target.value)}
           maxLength={500}
           className="min-h-[52px] rounded-xl border border-border bg-surface px-3 text-foreground"
-          placeholder="Referencia: calle, edificio, punto conocido"
+          placeholder={t.addressPlaceholder}
         />
       </div>
 
       <details className="rounded-xl border border-border bg-surface p-3">
         <summary className="cursor-pointer font-medium text-foreground">
-          Datos de contacto (opcional)
+          {t.contactSummary}
         </summary>
-        <p className="mt-2 text-sm text-muted">
-          Solo los equipos de rescate verán esto. Ayuda a que te encuentren.
-        </p>
+        <p className="mt-2 text-sm text-muted">{t.contactNote}</p>
         <input
           type="text"
           value={contactName}
           onChange={(e) => setContactName(e.target.value)}
           maxLength={120}
           className="mt-3 min-h-[52px] w-full rounded-xl border border-border bg-night px-3 text-foreground"
-          placeholder="Nombre"
+          placeholder={t.name}
         />
         <input
           type="tel"
@@ -221,7 +215,7 @@ export function SosForm() {
           onChange={(e) => setContactPhone(e.target.value)}
           maxLength={30}
           className="mt-2 min-h-[52px] w-full rounded-xl border border-border bg-night px-3 text-foreground"
-          placeholder="Teléfono"
+          placeholder={t.phone}
         />
       </details>
 
@@ -230,11 +224,9 @@ export function SosForm() {
         disabled={submitting}
         className="min-h-[60px] rounded-2xl bg-help px-6 text-lg font-bold text-white disabled:opacity-60"
       >
-        {submitting ? "Enviando…" : "Enviar pedido de ayuda"}
+        {submitting ? t.submitting : t.submit}
       </button>
-      <p className="text-center text-sm text-muted">
-        Funciona sin internet. Tu pedido se guarda y se envía solo.
-      </p>
+      <p className="text-center text-sm text-muted">{t.worksOffline}</p>
     </form>
   );
 }

@@ -1,6 +1,12 @@
 import Image from "next/image";
 
-export function Brand({ withTagline = false }: { withTagline?: boolean }) {
+export function Brand({
+  withTagline = false,
+  tagline,
+}: {
+  withTagline?: boolean;
+  tagline?: string;
+}) {
   return (
     <div className="flex items-center gap-3">
       <Image
@@ -15,10 +21,8 @@ export function Brand({ withTagline = false }: { withTagline?: boolean }) {
         <p className="text-2xl font-bold tracking-tight text-foreground">
           Faro
         </p>
-        {withTagline && (
-          <p className="text-sm text-muted">
-            Ayuda en emergencias, funcione o no el internet.
-          </p>
+        {withTagline && tagline && (
+          <p className="text-sm text-muted">{tagline}</p>
         )}
       </div>
     </div>

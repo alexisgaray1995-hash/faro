@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+import type { Dict } from "@/lib/i18n";
+
 // Honest connectivity indicator (Golden Rule #6). In M2 this also shows the
 // number of queued items waiting to sync and the last successful sync time.
-export function SyncStatus() {
+export function SyncStatus({ t }: { t: Dict["sync"] }) {
   const [online, setOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -20,12 +22,7 @@ export function SyncStatus() {
 
   // Before mount we don't know connectivity — render a neutral placeholder
   // to avoid a hydration mismatch.
-  const label =
-    online === null
-      ? "Comprobando conexión…"
-      : online
-        ? "En línea"
-        : "Sin conexión — la app sigue funcionando";
+  const label = online === null ? t.checking : online ? t.online : t.offline;
 
   const dotClass =
     online === null ? "bg-muted" : online ? "bg-volunteer" : "bg-beacon";
