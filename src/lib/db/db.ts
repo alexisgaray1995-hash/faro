@@ -10,6 +10,10 @@ export interface OutboxItem {
   // The row to insert. Always carries client_token so retries don't duplicate.
   payload: Record<string, unknown> & { client_token: string };
   createdAt: number;
+  // Replay bookkeeping. attempts counts failed flushes; failed marks a row the
+  // server keeps rejecting (poison) so it's skipped instead of blocking the queue.
+  attempts?: number;
+  failed?: boolean;
 }
 
 // Cached public reads so the map/list still shows last-known help points when

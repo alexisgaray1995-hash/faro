@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { db } from "@/lib/db/db";
 
-import { enqueue, flush, pendingCount } from "./outbox";
+import { enqueue, failedCount, flush, pendingCount } from "./outbox";
 
 afterEach(async () => {
   await db.outbox.clear();
@@ -16,6 +16,23 @@ function fakeSupabase(error: { code: string } | null = null) {
   const client = {
     from: () => ({
       insert: async (payload: unknown) => {
+        if (!error) inserted.push(payload);
+        return { error };
+      },
+    }),
+  };
+  return { client: client as never, inserted };
+}
+
+// A fake that returns a different result per insert call, so we can test a
+// poison row sitting in front of a good one.
+function seqSupabase(results: ({ code: string } | null)[]) {
+  let i = 0;
+  const inserted: unknown[] = [];
+  const client = {
+    from: () => ({
+      insert: async (payload: unknown) => {
+        const error = results[i++] ?? null;
         if (!error) inserted.push(payload);
         return { error };
       },
@@ -79,4 +96,40 @@ test("flush preserves order and stops at the first failure", async () => {
 
   const first = (await db.outbox.orderBy("createdAt").first())?.payload;
   expect((first as unknown as { category: string }).category).toBe("water");
+});
+
+test("a poison row is dead-lettered and does not block the rest of the queue", async () => {
+  await enqueue("needs", {
+    category: "water",
+    urgency: "high",
+    lat: 1,
+    lng: 1,
+  });
+  await enqueue("needs", { category: "food", urgency: "low", lat: 2, lng: 2 });
+
+  // First insert hits a permanent constraint error (23502 not-null); second is
+  // fine. The bad row must not stop the good one from syncing.
+  const { client, inserted } = seqSupabase([{ code: "23502" }, null]);
+  expect(await flush(client)).toBe(1);
+  expect(inserted).toHaveLength(1);
+  expect((inserted[0] as { category: string }).category).toBe("food");
+
+  expect(await pendingCount()).toBe(0); // nothing left actively waiting
+  expect(await failedCount()).toBe(1); // the poison row is parked, not lost
+});
+
+test("a row that keeps failing transiently is dead-lettered after MAX_ATTEMPTS", async () => {
+  await enqueue("needs", {
+    category: "water",
+    urgency: "high",
+    lat: 1,
+    lng: 1,
+  });
+
+  // Five transient (500) flushes; on the fifth the item crosses the cap.
+  const { client } = fakeSupabase({ code: "500" });
+  for (let i = 0; i < 5; i++) await flush(client);
+
+  expect(await pendingCount()).toBe(0);
+  expect(await failedCount()).toBe(1);
 });
