@@ -29,6 +29,7 @@ const es = {
     reportLabel: "Reportar",
     reportHazard: "Reportar un peligro",
     reportMissing: "Reportar persona desaparecida",
+    myPanel: "Mi panel de equipo",
     footer:
       "Faro es una herramienta gratuita y de código abierto. Sin anuncios, sin rastreo.",
   },
@@ -185,6 +186,7 @@ const en = {
     reportLabel: "Report",
     reportHazard: "Report a hazard",
     reportMissing: "Report a missing person",
+    myPanel: "My team panel",
     footer: "Faro is a free, open-source tool. No ads, no tracking.",
   },
   report: {

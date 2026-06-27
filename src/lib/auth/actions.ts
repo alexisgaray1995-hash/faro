@@ -6,6 +6,15 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/auth/safeNext";
 
+// Where a logged-in responder belongs: coordinators run dispatch, everyone else
+// works the queue. This is what makes login land on the right panel instead of
+// dumping a volunteer on a coordinator-only screen.
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+export async function responderHome(supabase: ServerClient): Promise<string> {
+  const { data } = await supabase.from("profiles").select("role").single();
+  return data?.role === "coordinator" ? "/coordinador" : "/panel";
+}
+
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -16,7 +25,7 @@ export async function signIn(formData: FormData) {
   if (error) {
     redirect(`/acceso?error=1&next=${encodeURIComponent(next)}`);
   }
-  redirect(next);
+  redirect(await responderHome(supabase));
 }
 
 export async function signUp(formData: FormData) {
@@ -49,7 +58,7 @@ export async function signUp(formData: FormData) {
   // straight into the panel. If on, there's no session yet → tell them to check
   // their email. ponytail: no custom email flow; flip the Supabase setting for
   // disaster-speed signups.
-  if (data.session) redirect(next);
+  if (data.session) redirect(await responderHome(supabase));
   redirect("/acceso?check=1");
 }
 
