@@ -25,8 +25,9 @@ export async function signUp(formData: FormData) {
   const displayName = String(formData.get("display_name") ?? "").trim();
   const next = safeNext(formData.get("next"));
 
-  // Fast path: minimal validation, the rest is enforced by Supabase + the DB.
-  if (!email || password.length < 8) {
+  // No password rules here — any password is fine; Supabase enforces its own
+  // project minimum. Just need the two fields present.
+  if (!email || !password) {
     redirect(`/registro?error=1&next=${encodeURIComponent(next)}`);
   }
 

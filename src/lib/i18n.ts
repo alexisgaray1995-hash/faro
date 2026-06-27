@@ -158,11 +158,10 @@ const es = {
     intro:
       "Para voluntarios y rescatistas. Rápido y sin complicaciones. Si necesitas ayuda, no hace falta cuenta:",
     askHelp: "pedir ayuda",
-    error:
-      "No se pudo crear la cuenta. Revisa el correo y la contraseña (mín. 8).",
+    error: "No se pudo crear la cuenta. Revisa el correo y la contraseña.",
     name: "Tu nombre (opcional)",
     email: "Correo",
-    password: "Contraseña (mín. 8)",
+    password: "Contraseña",
     submit: "Crear cuenta",
     haveAccount: "¿Ya tienes cuenta?",
     signIn: "Entrar",
@@ -312,11 +311,10 @@ const en = {
     intro:
       "For volunteers and rescuers. Fast and simple. If you need help, no account is required:",
     askHelp: "ask for help",
-    error:
-      "Couldn't create the account. Check the email and password (min. 8).",
+    error: "Couldn't create the account. Check the email and password.",
     name: "Your name (optional)",
     email: "Email",
-    password: "Password (min. 8)",
+    password: "Password",
     submit: "Create account",
     haveAccount: "Already have an account?",
     signIn: "Sign in",

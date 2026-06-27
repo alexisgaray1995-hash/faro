@@ -80,7 +80,6 @@ export default async function RegistroPage({
             type="password"
             name="password"
             required
-            minLength={8}
             autoComplete="new-password"
             className="min-h-[52px] rounded-xl border border-border bg-surface px-3 text-foreground"
           />
