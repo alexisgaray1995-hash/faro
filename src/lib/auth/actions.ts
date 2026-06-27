@@ -39,7 +39,11 @@ export async function signUp(formData: FormData) {
     options: { data: { display_name: displayName || undefined } },
   });
   if (error) {
-    redirect(`/registro?error=1&next=${encodeURIComponent(next)}`);
+    // Surface Supabase's real reason (e.g. "Password should be at least 6
+    // characters", "User already registered", "Signups not allowed").
+    redirect(
+      `/registro?error=1&msg=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`,
+    );
   }
   // If the project has email confirmation off, signUp returns a live session →
   // straight into the panel. If on, there's no session yet → tell them to check

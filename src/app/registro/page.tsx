@@ -11,9 +11,9 @@ export const metadata: Metadata = { title: "Crear cuenta de equipo" };
 export default async function RegistroPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; msg?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, msg } = await searchParams;
   const locale = await getLocale();
   const t = getDict(locale).registro;
 
@@ -48,7 +48,7 @@ export default async function RegistroPage({
             role="alert"
             className="rounded-lg bg-help/15 px-3 py-2 text-sm text-foreground"
           >
-            {t.error}
+            {msg ?? t.error}
           </p>
         )}
 
