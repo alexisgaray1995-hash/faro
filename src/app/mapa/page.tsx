@@ -1,13 +1,30 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/ui/ComingSoon";
+import Link from "next/link";
 
-export const metadata: Metadata = { title: "Mapa de recursos" };
+import { FindHelp } from "@/components/find/FindHelp";
+import { SyncStatus } from "@/components/ui/SyncStatus";
+
+export const metadata: Metadata = { title: "Buscar ayuda y peligros" };
 
 export default function MapaPage() {
   return (
-    <ComingSoon
-      title="Mapa de recursos"
-      description="Aquí verás agua, comida, refugios y peligros cercanos en un mapa que funciona sin internet. Esta función llega en la próxima versión."
-    />
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
+      <div className="flex items-center justify-between">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <span aria-hidden>←</span> Inicio
+        </Link>
+        <SyncStatus />
+      </div>
+      <header>
+        <h1 className="text-2xl font-bold text-foreground">Buscar ayuda</h1>
+        <p className="mt-1 text-muted">
+          Agua, comida, refugios, clínicas y peligros reportados cerca.
+        </p>
+      </header>
+      <FindHelp />
+    </main>
   );
 }

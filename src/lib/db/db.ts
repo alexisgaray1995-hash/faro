@@ -12,15 +12,23 @@ export interface OutboxItem {
   createdAt: number;
 }
 
-// Local IndexedDB. For now it's just the offline write queue; cached reads
-// (resources/hazards for the map) get added when the map lands.
-// ponytail: one table until reads need caching.
+// Cached public reads so the map/list still shows last-known help points when
+// offline (Golden Rule #1). Keyed by view name.
+export interface CacheEntry {
+  key: string;
+  rows: unknown[];
+  fetchedAt: number;
+}
+
+// Local IndexedDB: the offline write queue plus a small read cache.
 class FaroDB extends Dexie {
   outbox!: Table<OutboxItem, number>;
+  cache!: Table<CacheEntry, string>;
 
   constructor() {
     super("faro");
     this.version(1).stores({ outbox: "++id, createdAt" });
+    this.version(2).stores({ outbox: "++id, createdAt", cache: "key" });
   }
 }
 
