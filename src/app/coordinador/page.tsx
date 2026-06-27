@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { assignNeed, signOut, verifyNeed } from "@/lib/auth/actions";
+import { triageNeeds, type Triage } from "@/lib/ai/triage";
 import { createClient } from "@/lib/supabase/server";
 import {
   NEED_CATEGORY_LABEL,
@@ -54,11 +55,18 @@ function NeedCard({
   n,
   responders,
   assignedNames,
+  suggestion,
 }: {
   n: Need;
   responders: Profile[];
   assignedNames: string[];
+  suggestion?: Triage;
 }) {
+  // Only surface the AI when it disagrees with what the citizen selected — a
+  // possible mis-category or under-triage worth a human second look.
+  const differs =
+    suggestion &&
+    (suggestion.category !== n.category || suggestion.urgency !== n.urgency);
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
@@ -72,6 +80,17 @@ function NeedCard({
 
       {n.description && (
         <p className="mt-1 text-sm text-muted">{n.description}</p>
+      )}
+
+      {differs && suggestion && (
+        <div className="mt-2 rounded-xl border border-beacon/40 bg-beacon/10 p-2 text-xs text-foreground">
+          <span className="font-semibold">Sugerencia IA — verificar:</span>{" "}
+          {NEED_CATEGORY_LABEL[suggestion.category]} ·{" "}
+          {URGENCY_LABEL[suggestion.urgency]}
+          {suggestion.rationale && (
+            <span className="text-muted"> — {suggestion.rationale}</span>
+          )}
+        </div>
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
@@ -175,6 +194,10 @@ export default async function CoordinadorPage() {
   const responders = (respData ?? []) as Profile[];
   const assignments = (asgData ?? []) as Assignment[];
 
+  // No-ops to an empty map when Ollama isn't running, so the dashboard is
+  // unaffected if no AI box is configured.
+  const suggestions = await triageNeeds(needs);
+
   const nameById = new Map(responders.map((r) => [r.id, r.display_name]));
   const namesByNeed = new Map<string, string[]>();
   for (const a of assignments) {
@@ -219,6 +242,7 @@ export default async function CoordinadorPage() {
               n={n}
               responders={responders}
               assignedNames={namesByNeed.get(n.id) ?? []}
+              suggestion={suggestions.get(n.id)}
             />
           ))}
         </ul>
