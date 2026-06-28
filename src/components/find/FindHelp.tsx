@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { createClient } from "@/lib/supabase/client";
 
 import {
   HAZARD_TYPE_LABEL,
@@ -52,6 +55,54 @@ function VerifiedBadge({
   );
 }
 
+// A responder-only management action on a card (resolve a need/hazard, delete a
+// resource). Absent for anonymous citizens — they get the read-only card. RLS is
+// the real guard; this just hides controls that would no-op for them anyway.
+type Manage = {
+  label: string;
+  pendingLabel: string;
+  confirm: string;
+  failText: string;
+  destructive?: boolean;
+  run: () => Promise<boolean>;
+  onDone: () => void;
+};
+
+function ManageButton({ manage }: { manage: Manage }) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function handle() {
+    if (!confirm(manage.confirm)) return;
+    setBusy(true);
+    setFailed(false);
+    const ok = await manage.run();
+    if (ok) {
+      manage.onDone();
+      return; // card unmounts; no need to reset state
+    }
+    setFailed(true);
+    setBusy(false);
+  }
+
+  const tone = manage.destructive
+    ? "border-help text-help"
+    : "border-volunteer text-volunteer";
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={handle}
+        disabled={busy}
+        className={`min-h-[44px] rounded-xl border px-4 text-sm font-medium disabled:opacity-60 ${tone}`}
+      >
+        {busy ? manage.pendingLabel : manage.label}
+      </button>
+      {failed && <p className="mt-1 text-xs text-help">{manage.failText}</p>}
+    </div>
+  );
+}
+
 function Card({
   title,
   subtitle,
@@ -62,6 +113,7 @@ function Card({
   locale,
   mapLabel,
   supplies,
+  manage,
 }: {
   title: string;
   subtitle?: string | null;
@@ -72,6 +124,7 @@ function Card({
   locale: Locale;
   mapLabel: string;
   supplies?: SupplyLine[] | null;
+  manage?: Manage;
 }) {
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
@@ -92,6 +145,7 @@ function Card({
         </a>
       </div>
       {supplies && <SupplyChips supplies={supplies} />}
+      {manage && <ManageButton manage={manage} />}
     </li>
   );
 }
@@ -109,6 +163,16 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
   const needCat = (k: PublicNeed["category"]) =>
     locale === "en" ? NEED_CATEGORY_EN[k] : NEED_CATEGORY_LABEL[k];
 
+  // Each tab's "add" action routes to that type's existing authoring page —
+  // resources are responder-gated (/recursos), hazards and needs are open to
+  // anyone in distress. No forms are duplicated onto this public view.
+  const ADD: Record<Tab, { href: string; es: string; en: string }> = {
+    resources: { href: "/recursos", es: "Agregar punto", en: "Add point" },
+    hazards: { href: "/peligro", es: "Reportar peligro", en: "Report hazard" },
+    needs: { href: "/sos", es: "Pedir ayuda", en: "Request help" },
+  };
+
+  const supabase = useMemo(() => createClient(), []);
   const [tab, setTab] = useState<Tab>("resources");
   // ponytail: loading is derived from res.tab !== tab so the effect never
   // setState's synchronously (react-hooks/set-state-in-effect).
@@ -117,6 +181,50 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
     error: boolean;
     data: Fetched<AnyRow> | null;
   }>({ tab, error: false, data: null });
+
+  // A logged-in user here is a responder (only responders authenticate). Show
+  // them inline resolve/delete controls; anonymous citizens stay read-only. RLS
+  // enforces the real permission — this only hides buttons that would no-op.
+  const [isResponder, setIsResponder] = useState(false);
+  useEffect(() => {
+    let active = true;
+    supabase.auth
+      .getUser()
+      .then(({ data }) => active && setIsResponder(!!data.user));
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  // Optimistically drop a card once its resolve/delete succeeds — the row has
+  // left the public view (resolved/expired/deleted), so a refetch would only
+  // confirm the removal.
+  function removeRow(id: string) {
+    setRes((r) =>
+      r.data
+        ? { ...r, data: { ...r.data, rows: r.data.rows.filter((x) => x.id !== id) } }
+        : r,
+    );
+  }
+  const resolveRow = (table: "needs" | "hazards", id: string) => async () => {
+    const { error } = await supabase
+      .from(table)
+      .update({ status: "resolved" })
+      .eq("id", id);
+    return !error;
+  };
+  const deleteResource = (id: string) => async () => {
+    const { error } = await supabase.from("resources").delete().eq("id", id);
+    return !error;
+  };
+  const resolveLabels =
+    locale === "en"
+      ? { label: "Mark resolved", pendingLabel: "Resolving…", confirm: "Mark as resolved?", failText: "Couldn't update · retry" }
+      : { label: "Marcar resuelto", pendingLabel: "Resolviendo…", confirm: "¿Marcar como resuelto?", failText: "No se pudo · reintenta" };
+  const deleteLabels =
+    locale === "en"
+      ? { label: "Delete", pendingLabel: "Deleting…", confirm: "Delete this point?", failText: "Couldn't delete · retry" }
+      : { label: "Eliminar", pendingLabel: "Eliminando…", confirm: "¿Eliminar este punto?", failText: "No se pudo · reintenta" };
 
   useEffect(() => {
     let active = true;
@@ -162,6 +270,13 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
         ))}
       </div>
 
+      <Link
+        href={ADD[tab].href}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-volunteer px-4 font-semibold text-white"
+      >
+        + {locale === "en" ? ADD[tab].en : ADD[tab].es}
+      </Link>
+
       {state.data?.stale && (
         <p className="rounded-lg bg-beacon/15 px-3 py-2 text-sm text-foreground">
           {t.stale}
@@ -195,6 +310,16 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
                 locale={locale}
                 mapLabel={t.viewMap}
                 supplies={r.supplies}
+                manage={
+                  isResponder
+                    ? {
+                        ...deleteLabels,
+                        destructive: true,
+                        run: deleteResource(r.id),
+                        onDone: () => removeRow(r.id),
+                      }
+                    : undefined
+                }
               />
             ))}
           {tab === "hazards" &&
@@ -209,6 +334,15 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
                 lng={h.lng}
                 locale={locale}
                 mapLabel={t.viewMap}
+                manage={
+                  isResponder
+                    ? {
+                        ...resolveLabels,
+                        run: resolveRow("hazards", h.id),
+                        onDone: () => removeRow(h.id),
+                      }
+                    : undefined
+                }
               />
             ))}
           {tab === "needs" &&
@@ -223,6 +357,15 @@ export function FindHelp({ t, locale }: { t: Dict["find"]; locale: Locale }) {
                 lng={n.lng}
                 locale={locale}
                 mapLabel={t.viewMap}
+                manage={
+                  isResponder
+                    ? {
+                        ...resolveLabels,
+                        run: resolveRow("needs", n.id),
+                        onDone: () => removeRow(n.id),
+                      }
+                    : undefined
+                }
               />
             ))}
         </ul>

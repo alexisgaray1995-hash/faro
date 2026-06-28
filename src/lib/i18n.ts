@@ -16,6 +16,20 @@ export const SWITCH_LABEL: Record<Locale, string> = {
 
 const es = {
   brandTagline: "Ayuda en emergencias, funcione o no el internet.",
+  safety: {
+    emergencyTitle: "¿Peligro de muerte ahora?",
+    emergencyBody:
+      "Llama a los servicios de emergencia. Faro no los reemplaza ni garantiza que llegue ayuda.",
+    emergencyCall: "Llamar al 911",
+    accuracy:
+      "La información la reporta la comunidad y puede estar desactualizada o ser incorrecta. Verifica antes de actuar.",
+    responder:
+      "Actúa según tu criterio y formación. No te pongas en peligro y sigue las indicaciones de las autoridades.",
+    liability:
+      "Faro by Abby Systems se ofrece «tal cual», sin garantías. No nos responsabilizamos por decisiones tomadas a partir de esta información.",
+    terms: "Términos de uso",
+    privacy: "Política de privacidad",
+  },
   sync: {
     checking: "Comprobando conexión…",
     online: "En línea",
@@ -173,6 +187,20 @@ export type Dict = typeof es;
 
 const en = {
   brandTagline: "Emergency help, with or without the internet.",
+  safety: {
+    emergencyTitle: "Life-threatening emergency right now?",
+    emergencyBody:
+      "Call emergency services. Faro does not replace them and cannot guarantee help will arrive.",
+    emergencyCall: "Call 911",
+    accuracy:
+      "Information is community-reported and may be outdated or wrong. Verify before acting.",
+    responder:
+      "Act on your own judgment and training. Don't put yourself in danger, and follow the authorities' instructions.",
+    liability:
+      'Faro by Abby Systems is provided "as is," without warranty. We are not liable for decisions made based on this information.',
+    terms: "Terms of Use",
+    privacy: "Privacy Policy",
+  },
   sync: {
     checking: "Checking connection…",
     online: "Online",

@@ -4,6 +4,8 @@ import "leaflet/dist/leaflet.css";
 import type * as Leaflet from "leaflet";
 import { useEffect, useRef, useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/client";
 import { RESOURCE_TYPE_LABEL, type ResourceType } from "@/lib/domain";
 import { draftsToRows } from "@/lib/supply";
@@ -21,6 +23,7 @@ const RESOURCE_TYPES = Object.entries(RESOURCE_TYPE_LABEL) as [
 ][];
 
 export function RecursosEditor({ userId }: { userId: string }) {
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const markerRef = useRef<Leaflet.Marker | null>(null);
   const [coords, setCoords] = useState<[number, number]>(DEFAULT_CENTER);
@@ -115,6 +118,9 @@ export function RecursosEditor({ userId }: { userId: string }) {
     const synced = await flush(createClient()).catch(() => 0);
     setResult(synced > 0 ? "sent" : "queued");
     setSubmitting(false);
+    // Show the freshly published point right away rather than waiting on the
+    // realtime round-trip. (Offline adds wait for sync — nothing to refresh.)
+    if (synced > 0) router.refresh();
     // Reset for the next point.
     setName("");
     setDescription("");

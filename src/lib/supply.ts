@@ -84,6 +84,19 @@ export function supplyLineText(s: SupplyLine): string {
   return `${base} · ${s.quantity}${s.unit ? ` ${s.unit}` : ""}`;
 }
 
+// A point is "depleted" when it has tracked supplies and every one reads out —
+// the point where it's safe to let the creator retire it. Mirrors the DB delete
+// policy in 20260627000018_resources_creator_delete.sql.
+export function allSuppliesOut(
+  supplies: SupplyLine[] | null | undefined,
+): boolean {
+  return (
+    !!supplies &&
+    supplies.length > 0 &&
+    supplies.every((s) => s.status === "out")
+  );
+}
+
 // Editor draft shape (quantity/unit are raw input strings).
 export interface SupplyDraft {
   status: SupplyStatus;

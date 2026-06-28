@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import { RESOURCE_TYPE_LABEL } from "@/lib/domain";
-import { draftsToRows, type SupplyCategory } from "@/lib/supply";
+import {
+  allSuppliesOut,
+  draftsToRows,
+  type SupplyCategory,
+} from "@/lib/supply";
 import {
   SupplyEditor,
   type SupplyMap,
@@ -45,6 +49,29 @@ function PointEditor({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // Offer deletion once every supply in the editor reads "out". Gated on the
+  // live edit (not the saved rows) so the button appears the moment you mark the
+  // point depleted — no save-then-refresh round-trip to discover it.
+  const depleted = allSuppliesOut(draftsToRows(supplies));
+
+  async function remove() {
+    if (!confirm(`¿Eliminar "${point.name}"? Esta acción no se puede deshacer.`))
+      return;
+    setDeleting(true);
+    setError(false);
+    const supabase = createClient();
+    const { error: delErr } = await supabase
+      .from("resources")
+      .delete()
+      .eq("id", point.id);
+    if (delErr) {
+      setError(true);
+      setDeleting(false);
+      return;
+    }
+    router.refresh();
+  }
 
   async function save() {
     setSaving(true);
@@ -97,6 +124,14 @@ function PointEditor({
         </h3>
         {!point.is_open && <span className="text-xs text-muted">Cerrado</span>}
       </div>
+      <a
+        href={`https://www.openstreetmap.org/?mlat=${point.lat}&mlon=${point.lng}#map=17/${point.lat}/${point.lng}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1 inline-block text-sm text-volunteer underline"
+      >
+        📍 Ver en mapa · cómo llegar
+      </a>
       <div className="mt-3">
         <SupplyEditor value={supplies} onChange={setSupplies} />
       </div>
@@ -105,14 +140,26 @@ function PointEditor({
           Necesitas conexión para guardar cambios en un punto existente.
         </p>
       )}
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="mt-3 min-h-[44px] rounded-xl bg-volunteer px-4 font-medium text-white disabled:opacity-60"
-      >
-        {saving ? "Guardando…" : "Guardar suministros"}
-      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving || deleting}
+          className="min-h-[44px] rounded-xl bg-volunteer px-4 font-medium text-white disabled:opacity-60"
+        >
+          {saving ? "Guardando…" : "Guardar suministros"}
+        </button>
+        {depleted && (
+          <button
+            type="button"
+            onClick={remove}
+            disabled={saving || deleting}
+            className="min-h-[44px] rounded-xl border border-help px-4 font-medium text-help disabled:opacity-60"
+          >
+            {deleting ? "Eliminando…" : "Eliminar punto"}
+          </button>
+        )}
+      </div>
     </li>
   );
 }

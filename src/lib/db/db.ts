@@ -12,8 +12,9 @@ export type OutboxTable =
 export interface OutboxItem {
   id?: number;
   table: OutboxTable;
-  // The row to insert. Always carries client_token so retries don't duplicate.
-  payload: Record<string, unknown> & { client_token: string };
+  // The row to insert. Server-PK tables (needs/hazards/missing_persons) carry a
+  // client_token for idempotent replay; resources dedup on their own PK instead.
+  payload: Record<string, unknown>;
   createdAt: number;
   // Replay bookkeeping. attempts counts failed flushes; failed marks a row the
   // server keeps rejecting (poison) so it's skipped instead of blocking the queue.

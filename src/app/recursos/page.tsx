@@ -16,15 +16,11 @@ export const metadata: Metadata = { title: "Recursos y suministros" };
 export default async function RecursosPage() {
   const supabase = await createClient();
 
-  // Login is enforced by proxy.ts; this confirms the user is a responder.
+  // Login is enforced by proxy.ts; we only need the id to stamp authored rows.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .single();
-  if (!user || !me) redirect("/acceso?next=/recursos");
+  if (!user) redirect("/acceso?next=/recursos");
 
   const { data } = await supabase
     .from("resources")

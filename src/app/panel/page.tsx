@@ -206,6 +206,12 @@ export default async function PanelPage() {
         </p>
       </header>
 
+      <p className="rounded-xl border border-help/40 bg-help/10 px-3 py-2 text-xs text-muted">
+        Actúa según tu criterio y formación. No te pongas en peligro y sigue las
+        indicaciones de las autoridades. La información la reporta la comunidad y
+        puede ser inexacta.
+      </p>
+
       {error && (
         <p className="text-muted">
           No se pudieron cargar los pedidos. Revisa tu conexión.

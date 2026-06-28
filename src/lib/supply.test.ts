@@ -1,11 +1,29 @@
 import { expect, test } from "vitest";
 
 import {
+  allSuppliesOut,
   draftsToRows,
   pinStatus,
   supplyLineText,
   type SupplyLine,
 } from "./supply";
+
+test("allSuppliesOut: true only when every tracked supply is out", () => {
+  expect(allSuppliesOut(null)).toBe(false);
+  expect(allSuppliesOut([])).toBe(false); // no data is not "out"
+  expect(
+    allSuppliesOut([
+      { category: "water", status: "out" },
+      { category: "food", status: "low" },
+    ]),
+  ).toBe(false);
+  expect(
+    allSuppliesOut([
+      { category: "water", status: "out" },
+      { category: "food", status: "out" },
+    ]),
+  ).toBe(true);
+});
 
 test("closed point is grey regardless of stock", () => {
   const s: SupplyLine[] = [{ category: "water", status: "ok" }];
