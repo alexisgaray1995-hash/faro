@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { RESOURCE_TYPE_LABEL } from "@/lib/domain";
 import { RESOURCE_TYPE_EN, type Dict, type Locale } from "@/lib/i18n";
 import { fetchResources, type PublicResource } from "@/lib/data/publicData";
+import { PIN_COLOR, pinStatus, supplyLineText } from "@/lib/supply";
 
 // A real, visual map of help-points (water, food, shelter, clinics) so people can
 // SEE where to head. Leaflet + OpenStreetMap tiles: free, no API key, no tracking
@@ -97,12 +98,17 @@ export function MapView({ t, locale }: { t: Dict["find"]; locale: Locale }) {
         for (const r of rows) {
           const dir = `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`;
           const status = r.is_open ? "" : ` · ${esc(t.closed)}`;
+          const color = PIN_COLOR[pinStatus(r.supplies, r.is_open)];
+          const supplyHtml =
+            r.supplies && r.supplies.length > 0
+              ? `<br>${r.supplies.map((s) => esc(supplyLineText(s))).join("<br>")}`
+              : "";
           L.marker([r.lat, r.lng], {
             icon: L.divIcon({
               className: "",
-              html: `<div style="font-size:26px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));opacity:${r.is_open ? 1 : 0.55}">${EMOJI[r.type]}</div>`,
-              iconSize: [26, 26],
-              iconAnchor: [13, 13],
+              html: `<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5);font-size:16px;opacity:${r.is_open ? 1 : 0.6}">${EMOJI[r.type]}</div>`,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
             }),
             title: r.name,
             opacity: 1,
@@ -110,6 +116,7 @@ export function MapView({ t, locale }: { t: Dict["find"]; locale: Locale }) {
             .addTo(map)
             .bindPopup(
               `<strong>${esc(r.name)}</strong><br>${EMOJI[r.type]} ${esc(typeLabel(r.type))}${status}` +
+                supplyHtml +
                 `<br><a href="${dir}" target="_blank" rel="noopener noreferrer">${esc(t.directions)} →</a>`,
             );
         }

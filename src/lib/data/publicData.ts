@@ -6,6 +6,7 @@ import type {
   Urgency,
 } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/client";
+import type { SupplyLine } from "@/lib/supply";
 import type { Database } from "@/types/database";
 
 type Verification = Database["public"]["Enums"]["verification_status"];
@@ -22,6 +23,7 @@ export interface PublicResource {
   lng: number;
   verification: Verification;
   updated_at: string;
+  supplies: SupplyLine[] | null;
 }
 
 export interface PublicHazard {

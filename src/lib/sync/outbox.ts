@@ -5,6 +5,16 @@ import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
 
+// Tables whose PK is server-generated rely on a client_token for idempotency.
+// Resources carry their own client-generated id (and supplies a composite key),
+// so they dedup on the PK/unique constraint and have no client_token column —
+// injecting one would make the insert fail with 42703 (undefined column).
+const TABLES_WITH_CLIENT_TOKEN = new Set<OutboxTable>([
+  "needs",
+  "hazards",
+  "missing_persons",
+]);
+
 // Queue a write locally. Returns the client_token so the UI can show "pending".
 // Generates a token if the caller didn't supply one — it's the idempotency key.
 export async function enqueue(
@@ -14,7 +24,9 @@ export async function enqueue(
   const client_token = (payload.client_token as string) ?? crypto.randomUUID();
   await db.outbox.add({
     table,
-    payload: { ...payload, client_token },
+    payload: TABLES_WITH_CLIENT_TOKEN.has(table)
+      ? { ...payload, client_token }
+      : payload,
     createdAt: Date.now(),
   });
   return client_token;
@@ -59,6 +71,9 @@ export async function flush(supabase: Client): Promise<number> {
       synced++;
       continue;
     }
+
+    // Silent dead-lettering is hard to debug — leave a breadcrumb.
+    console.warn("[flush] insert rejected", item.table, error.code, error.message);
 
     const attempts = (item.attempts ?? 0) + 1;
     if (isPermanent(error.code) || attempts >= MAX_ATTEMPTS) {

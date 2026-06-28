@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FindHelp } from "@/components/find/FindHelp";
 import { MapView } from "@/components/find/MapView";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { SafetyNotice } from "@/components/ui/SafetyNotice";
 import { SyncStatus } from "@/components/ui/SyncStatus";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
@@ -34,6 +35,7 @@ export default async function MapaPage() {
         </h1>
         <p className="mt-1 text-muted">{t.find.intro}</p>
       </header>
+      <SafetyNotice t={t.safety} />
       <MapView t={t.find} locale={locale} />
       <FindHelp t={t.find} locale={locale} />
 
@@ -57,6 +59,7 @@ export default async function MapaPage() {
         <Link href="/panel" className="underline">
           {t.find.teamAccess}
         </Link>
+        <p className="text-xs">{t.safety.liability}</p>
       </footer>
     </main>
   );

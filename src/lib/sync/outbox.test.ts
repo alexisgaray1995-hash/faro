@@ -133,3 +133,26 @@ test("a row that keeps failing transiently is dead-lettered after MAX_ATTEMPTS",
   expect(await pendingCount()).toBe(0);
   expect(await failedCount()).toBe(1);
 });
+
+test("enqueues and flushes the two resource tables", async () => {
+  await enqueue("resources", { id: "r1", type: "water_point", name: "Oasis" });
+  await enqueue("resource_supplies", { resource_id: "r1", category: "water" });
+  const { client, inserted } = fakeSupabase();
+  const synced = await flush(client);
+  expect(synced).toBe(2);
+  expect(inserted).toHaveLength(2);
+});
+
+test("flushes the parent resource before its supply children (FK order)", async () => {
+  // Children enqueued in the same tick as the parent must still flush after it.
+  await enqueue("resources", { id: "r1", type: "shelter", name: "Refugio" });
+  await enqueue("resource_supplies", { resource_id: "r1", category: "water" });
+  await enqueue("resource_supplies", { resource_id: "r1", category: "food" });
+  const { client, inserted } = fakeSupabase();
+  await flush(client);
+  const tables = (inserted as { resource_id?: string; type?: string }[]).map(
+    (p) => (p.type ? "resources" : "resource_supplies"),
+  );
+  expect(tables[0]).toBe("resources");
+  expect(tables.slice(1)).toEqual(["resource_supplies", "resource_supplies"]);
+});

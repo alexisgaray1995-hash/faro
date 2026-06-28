@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Brand } from "@/components/ui/Brand";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { RoleButton } from "@/components/ui/RoleButton";
+import { SafetyNotice } from "@/components/ui/SafetyNotice";
 import { SyncStatus } from "@/components/ui/SyncStatus";
 import { ROLES } from "@/lib/constants";
 import { getDict } from "@/lib/i18n";
@@ -48,6 +49,8 @@ export default async function HomePage() {
         <p className="mt-4 text-pretty text-muted">{t.home.intro}</p>
       </div>
 
+      <SafetyNotice t={t.safety} />
+
       {panel && (
         <Link
           href={panel}
@@ -80,6 +83,15 @@ export default async function HomePage() {
 
       <footer className="mt-auto space-y-2 text-sm text-muted">
         <p>{t.home.footer}</p>
+        <p className="text-xs">{t.safety.liability}</p>
+        <p className="flex gap-3 text-xs">
+          <Link href="/terminos" className="underline">
+            {t.safety.terms}
+          </Link>
+          <Link href="/privacidad" className="underline">
+            {t.safety.privacy}
+          </Link>
+        </p>
         <p className="flex items-center gap-1.5 text-xs">
           <span className="font-display font-semibold text-foreground">
             Faro

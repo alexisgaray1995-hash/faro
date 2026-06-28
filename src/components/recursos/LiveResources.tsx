@@ -5,36 +5,32 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 
-// Keeps a server-rendered needs list fresh: subscribe to changes on the needs
-// table and re-fetch the route when one lands, so a responder sees new and
-// updated needs without pulling to refresh.
+// Keeps the server-rendered /recursos points fresh: subscribe to changes on
+// resources + resource_supplies and re-fetch the route when one lands, so a
+// responder sees another responder's edits without pulling to refresh.
 // ponytail: refresh the whole route (simple, RLS-correct) instead of patching
-// individual rows client-side. Fine at dashboard scale; revisit if the list
-// grows into the thousands.
-export function LiveNeeds() {
+// rows client-side. Fine at dashboard scale.
+export function LiveResources() {
   const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
     let timer: ReturnType<typeof setTimeout> | undefined;
-
-    // Coalesce bursts (a batch sync, or an assignment moving through statuses)
-    // into one refresh so we don't thrash the server.
     const refresh = () => {
       clearTimeout(timer);
       timer = setTimeout(() => router.refresh(), 400);
     };
 
     const channel = supabase
-      .channel("needs-live")
+      .channel("resources-live")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "needs" },
+        { event: "*", schema: "public", table: "resources" },
         refresh,
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "assignments" },
+        { event: "*", schema: "public", table: "resource_supplies" },
         refresh,
       )
       .subscribe();

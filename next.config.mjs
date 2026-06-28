@@ -19,9 +19,20 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Force HTTPS once seen, so session cookies can't leak over a downgraded
+  // connection. Ignored by browsers over plain HTTP, so it's safe in dev.
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
   {
     key: "Content-Security-Policy",
-    value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    // object-src/frame-src 'none' kill plugin- and iframe-injection vectors —
+    // the app embeds neither, so this is zero-risk and needs no browser test
+    // (unlike a script-src nonce CSP; see DEPLOYMENT.md §7).
+    value:
+      "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; " +
+      "object-src 'none'; frame-src 'none'",
   },
   {
     key: "Permissions-Policy",

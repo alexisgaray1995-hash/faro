@@ -378,6 +378,67 @@ export type Database = {
         };
         Relationships: [];
       };
+      resource_supplies: {
+        Row: {
+          category: Database["public"]["Enums"]["supply_category"];
+          created_at: string;
+          id: string;
+          label: string | null;
+          quantity: number | null;
+          resource_id: string;
+          status: Database["public"]["Enums"]["supply_status"];
+          unit: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          category: Database["public"]["Enums"]["supply_category"];
+          created_at?: string;
+          id?: string;
+          label?: string | null;
+          quantity?: number | null;
+          resource_id: string;
+          status?: Database["public"]["Enums"]["supply_status"];
+          unit?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          category?: Database["public"]["Enums"]["supply_category"];
+          created_at?: string;
+          id?: string;
+          label?: string | null;
+          quantity?: number | null;
+          resource_id?: string;
+          status?: Database["public"]["Enums"]["supply_status"];
+          unit?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resource_supplies_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "public_resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "resource_supplies_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "resource_supplies_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       resources: {
         Row: {
           address_note: string | null;
@@ -575,6 +636,7 @@ export type Database = {
           lat: number | null;
           lng: number | null;
           name: string | null;
+          supplies: Json | null;
           type: Database["public"]["Enums"]["resource_type"] | null;
           updated_at: string | null;
           verification:
@@ -593,6 +655,7 @@ export type Database = {
           lat?: number | null;
           lng?: number | null;
           name?: string | null;
+          supplies?: never;
           type?: Database["public"]["Enums"]["resource_type"] | null;
           updated_at?: string | null;
           verification?:
@@ -611,6 +674,7 @@ export type Database = {
           lat?: number | null;
           lng?: number | null;
           name?: string | null;
+          supplies?: never;
           type?: Database["public"]["Enums"]["resource_type"] | null;
           updated_at?: string | null;
           verification?:
@@ -668,6 +732,16 @@ export type Database = {
         | "charging_station"
         | "distribution_center"
         | "other";
+      supply_category:
+        | "water"
+        | "food"
+        | "medical"
+        | "shelter_beds"
+        | "hygiene"
+        | "power"
+        | "infant"
+        | "other";
+      supply_status: "ok" | "low" | "out";
       urgency: "critical" | "high" | "medium" | "low";
       user_role: "volunteer" | "coordinator";
       verification_status: "unverified" | "verified" | "disputed";
@@ -840,6 +914,17 @@ export const Constants = {
         "distribution_center",
         "other",
       ],
+      supply_category: [
+        "water",
+        "food",
+        "medical",
+        "shelter_beds",
+        "hygiene",
+        "power",
+        "infant",
+        "other",
+      ],
+      supply_status: ["ok", "low", "out"],
       urgency: ["critical", "high", "medium", "low"],
       user_role: ["volunteer", "coordinator"],
       verification_status: ["unverified", "verified", "disputed"],

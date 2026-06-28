@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   claimNeed,
   releaseNeed,
+  setAssignmentStatus,
   signOut,
   updateNeedStatus,
 } from "@/lib/auth/actions";
@@ -11,9 +12,12 @@ import { LiveNeeds } from "@/components/panel/LiveNeeds";
 import { RouteEta } from "@/components/panel/RouteEta";
 import { createClient } from "@/lib/supabase/server";
 import {
+  ASSIGNMENT_STATUS_LABEL,
   NEED_CATEGORY_LABEL,
   NEED_STATUS_LABEL,
+  NEXT_ASSIGNMENT_STATUS,
   URGENCIES,
+  type AssignmentStatus,
   type NeedStatus,
 } from "@/lib/domain";
 import { timeAgo, VERIFICATION_LABEL } from "@/lib/format";
@@ -81,6 +85,87 @@ function ActionButton({
         {label}
       </button>
     </form>
+  );
+}
+
+// A need as joined onto an assignment row (responder may read full PII).
+type AssignedNeed = Pick<
+  Need,
+  | "category"
+  | "people_count"
+  | "lat"
+  | "lng"
+  | "address_note"
+  | "contact_name"
+  | "contact_phone"
+>;
+type MyAssignment = {
+  id: string;
+  status: AssignmentStatus;
+  note: string | null;
+  needs: AssignedNeed | null;
+};
+
+// What a coordinator handed this responder, with the one forward action to keep
+// the dispatcher's board live (Aceptar → En camino → Completar).
+function AssignmentCard({ a }: { a: MyAssignment }) {
+  const n = a.needs;
+  if (!n) return null;
+  const next = NEXT_ASSIGNMENT_STATUS[a.status];
+  return (
+    <li className="rounded-2xl border border-coordinator/40 bg-coordinator/5 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-semibold text-foreground">
+          {NEED_CATEGORY_LABEL[n.category]} · {n.people_count} pers.
+        </h3>
+        <span className="rounded-full bg-coordinator/20 px-2 py-0.5 text-xs font-medium text-foreground">
+          {ASSIGNMENT_STATUS_LABEL[a.status]}
+        </span>
+      </div>
+
+      {n.address_note && (
+        <p className="mt-1 text-sm text-muted">📍 {n.address_note}</p>
+      )}
+      {n.contact_name && (
+        <p className="mt-1 text-sm text-muted">
+          {n.contact_name}
+          {n.contact_phone && (
+            <>
+              {" · "}
+              <a href={`tel:${n.contact_phone}`} className="underline">
+                {n.contact_phone}
+              </a>
+            </>
+          )}
+        </p>
+      )}
+      {a.note && <p className="mt-1 text-sm text-muted">📝 {a.note}</p>}
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+        <a
+          href={`https://www.openstreetmap.org/?mlat=${n.lat}&mlon=${n.lng}#map=17/${n.lat}/${n.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+          Ver en mapa
+        </a>
+        <RouteEta lat={n.lat} lng={n.lng} />
+      </div>
+
+      {next && (
+        <form action={setAssignmentStatus} className="mt-3">
+          <input type="hidden" name="id" value={a.id} />
+          <input type="hidden" name="status" value={next} />
+          <button
+            type="submit"
+            className="min-h-[44px] rounded-xl bg-coordinator px-4 font-medium text-white"
+          >
+            {ASSIGNMENT_STATUS_LABEL[next]}
+          </button>
+        </form>
+      )}
+    </li>
   );
 }
 
@@ -167,12 +252,30 @@ export default async function PanelPage() {
     .select("*")
     .in("status", ["open", "in_progress"]);
   if (user) query.or(`claimed_by.is.null,claimed_by.eq.${user.id}`);
-  const { data, error } = await query
-    .order("urgency")
-    .order("created_at", { ascending: false })
-    .limit(200);
+
+  // My open assignments (what a coordinator dispatched to me), newest first.
+  // RLS already limits this to my own rows; completed/cancelled drop off.
+  const asgQuery = user
+    ? supabase
+        .from("assignments")
+        .select(
+          "id, status, note, needs(category, people_count, lat, lng, address_note, contact_name, contact_phone)",
+        )
+        .eq("responder_id", user.id)
+        .not("status", "in", "(completed,cancelled)")
+        .order("created_at", { ascending: false })
+    : null;
+
+  const [{ data, error }, asgRes] = await Promise.all([
+    query
+      .order("urgency")
+      .order("created_at", { ascending: false })
+      .limit(200),
+    asgQuery ?? Promise.resolve({ data: [] }),
+  ]);
 
   const needs = (data ?? []) as Need[];
+  const assignments = (asgRes.data ?? []) as unknown as MyAssignment[];
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-8">
@@ -184,11 +287,16 @@ export default async function PanelPage() {
         >
           <span aria-hidden>←</span> Inicio
         </Link>
-        <form action={signOut}>
-          <button type="submit" className="text-sm text-muted underline">
-            Salir
-          </button>
-        </form>
+        <div className="flex items-center gap-4">
+          <Link href="/recursos" className="text-sm text-muted underline">
+            Recursos
+          </Link>
+          <form action={signOut}>
+            <button type="submit" className="text-sm text-muted underline">
+              Salir
+            </button>
+          </form>
+        </div>
       </div>
 
       <header>
@@ -200,6 +308,29 @@ export default async function PanelPage() {
           antes de actuar.
         </p>
       </header>
+
+      <p className="rounded-xl border border-help/40 bg-help/10 px-3 py-2 text-xs text-muted">
+        Actúa según tu criterio y formación. No te pongas en peligro y sigue las
+        indicaciones de las autoridades. La información la reporta la comunidad y
+        puede ser inexacta.
+      </p>
+
+      {assignments.length > 0 && (
+        <section>
+          <h2 className="font-display text-lg font-semibold text-foreground">
+            Mis asignaciones
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Lo que coordinación te encargó. Marca tu avance para que lo vean en
+            tiempo real.
+          </p>
+          <ul className="mt-3 flex flex-col gap-3">
+            {assignments.map((a) => (
+              <AssignmentCard key={a.id} a={a} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {error && (
         <p className="text-muted">
