@@ -4,7 +4,7 @@
 -- trust. If any of these fail, we are violating a Golden Rule — treat as a P0.
 
 begin;
-select plan(31);
+select plan(36);
 
 -- ---------------------------------------------------------------------------
 -- Golden Rule 2: "I need help" is never behind a login.
@@ -180,6 +180,16 @@ select is(
   'a claimed need cannot be stolen by a racing responder (atomic claim)'
 );
 
+-- Moderation: a volunteer cannot hard-delete a report. The delete policy is
+-- coordinator-only, so RLS filters the delete to zero rows (no exception) — the
+-- row survives.
+delete from public.needs where description = 'prueba anónima';
+select is(
+  (select count(*)::int from public.needs where description = 'prueba anónima'),
+  1,
+  'a volunteer cannot delete a need (coordinator-only delete policy)'
+);
+
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -209,6 +219,12 @@ select lives_ok(
       set claimed_by = '11111111-1111-1111-1111-111111111111'
       where description = 'prueba anónima'$$,
   'a coordinator can reassign a claim held by another responder'
+);
+
+-- Moderation: a coordinator can hard-delete an abusive/false report outright.
+select lives_ok(
+  $$delete from public.needs where description = 'prueba anónima'$$,
+  'a coordinator can delete an abusive/false need'
 );
 
 reset role;
@@ -271,6 +287,52 @@ select throws_ok(
   '42703',
   null,
   'public_resources still hides operator contact (no contact column)'
+);
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Security: is_active is a real kill switch (migration 20). A coordinator
+-- deactivates a responder; that responder must immediately lose all PII access
+-- and must not be able to reactivate themselves. RLS filters rather than
+-- throwing (the table grant/policy exist), so we assert the OUTCOME, not an
+-- exception.
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+select lives_ok(
+  $$update public.profiles set is_active = false
+      where id = '22222222-2222-2222-2222-222222222222'$$,
+  'a coordinator can deactivate a responder'
+);
+
+reset role;
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+-- Access revoked: a deactivated responder reads zero needs (PII gone).
+select is(
+  (select count(*)::int from public.needs),
+  0,
+  'a deactivated responder reads zero needs (is_active revokes PII access)'
+);
+
+-- Self-reactivation is a no-op: an inactive responder cannot even see their own
+-- profile row (read policy requires is_responder), so the update touches nothing
+-- — and the guard trigger would block it anyway.
+update public.profiles set is_active = true
+  where id = '22222222-2222-2222-2222-222222222222';
+
+reset role;
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+select is(
+  (select is_active from public.profiles
+     where id = '22222222-2222-2222-2222-222222222222'),
+  false,
+  'a deactivated responder could not reactivate themselves'
 );
 
 reset role;

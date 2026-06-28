@@ -92,3 +92,125 @@ docker run -t -i -p 5000:5000 -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backen
 
 ETAs route the **pre-quake** road network, so they are best-guess and shown with
 a `~` (Golden Rule 5: don't present stale data as fact).
+
+## 5. Abuse & flood resistance (edge, not database)
+
+Anonymous SOS / hazard / missing-person submits go straight to PostgREST as the
+`anon` role — there is no server choke point, by design (Golden Rule 2: "I need
+help" is never behind a login or a server we control). That makes write-flood
+defense an **edge** concern, and deliberately **not** a database rate limit:
+
+> A DB-level per-IP throttle would harm real victims. In Venezuela most users
+> share IPs via CGNAT, and a genuine mass-casualty event looks exactly like a
+> flood — high volume, geographically clustered. Any threshold low enough to
+> stop a script is low enough to block a shelter full of real people. So we do
+> **not** rate-limit victim writes in Postgres; we absorb floods at the edge,
+> where real client IPs and behavioral signals exist, and clean up after the
+> fact in the DB.
+
+What's already in place (in-repo, victim-safe):
+
+- **Idempotency** — `needs`, `hazards`, `missing_persons` each have a `UNIQUE`
+  `client_token`, so retried offline-outbox flushes can't duplicate.
+- **`max_rows = 1000`** (`config.toml [api]`) caps read/export payloads.
+- **Coordinator hard-delete** (migration 22) pulls obvious abuse immediately.
+- **`purge_expired()`** (migration 21) ages out stale/abandoned PII so a flood
+  can't accumulate forever.
+
+What to configure at deploy (platform, free-tier friendly):
+
+1. **Turnstile / hCaptcha in front of the submit forms.** Cloudflare Turnstile
+   is free and invisible for most users; verify the token in a thin Edge
+   Function (or Vercel middleware) that proxies the insert, and fail **open** on
+   a captcha-service outage — never block a real SOS because the captcha
+   provider is down.
+2. **Cloudflare (free) in front of the Supabase + Vercel hostnames.** Enable
+   "Under Attack" mode only during an actual flood; set a generous rate rule
+   (e.g. per-IP burst in the hundreds/min) that trips a JS challenge rather than
+   a hard block, so CGNAT crowds get a challenge, not a wall.
+3. **Supabase auth rate limits** (`config.toml [auth.rate_limit]`) already cap
+   sign-in/OTP abuse; leave them on. These cover responder accounts, not the
+   anonymous write path.
+
+The ordering matters: a challenge that a human passes (captcha / JS challenge)
+is acceptable; a silent drop of a victim's report is not.
+
+## 6. Responder account security
+
+Anonymous victims never log in, but **responder** accounts (volunteers,
+coordinators) hold the keys to victim PII and to blessing trust — so they are
+the high-value target. Hardening lives in `config.toml [auth]` and the Supabase
+dashboard:
+
+- **Strong passwords (in repo).** `minimum_password_length = 10` and
+  `password_requirements = "lower_upper_letters_digits"` are set, so weak
+  responder passwords are rejected at signup/reset.
+- **TOTP MFA capability (in repo).** `[auth.mfa.totp]` is enabled, so accounts
+  can enrol an authenticator app.
+- **Leaked-password protection (dashboard).** Enable
+  *Authentication → Policies → "Check against HaveIBeenPwned"* on the hosted
+  project — it's not exposed in local `config.toml`. This blocks passwords known
+  from breaches, the cheapest credential-stuffing defense.
+
+**Follow-up — enforce MFA for coordinators (AAL2).** Enabling TOTP makes MFA
+*available*, not *required*. Full enforcement needs two pieces this build does
+not yet ship:
+
+1. an enrolment screen in the coordinator dashboard
+   (`supabase.auth.mfa.enroll`/`challenge`/`verify`), and
+2. an `aal2` check in `src/proxy.ts` for `/coordinador` (read the
+   `aal` claim from the session and redirect un-stepped-up coordinators to the
+   enrol/challenge flow).
+
+Do **not** add the `proxy.ts` gate before the enrolment screen exists, or you
+lock every coordinator out with no way to enrol. Ship the screen first, then the
+gate.
+
+## 7. Content-Security-Policy — what's shipped vs. deferred
+
+`next.config.mjs` ships the **safe, script-free** subset of CSP, applied to all
+routes:
+
+```
+frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+object-src 'none'; frame-src 'none'
+```
+
+This blocks clickjacking, base-tag and form hijacking, and plugin/iframe
+injection — none of which can break script, style, or map-tile loading, so it
+needs no browser verification.
+
+**Deferred on purpose: a strict `script-src` nonce CSP.** It is *not* shipped,
+and that is a deliberate risk call, not an oversight:
+
+- The XSS surface it would defend is near-zero — the app has **no**
+  `dangerouslySetInnerHTML`, no inline `<script>`, no `eval`/`new Function`,
+  React escapes all output, and every public view is PII-free.
+- Getting it wrong **bricks script loading for victims** — unacceptable in a
+  disaster, far worse than the marginal XSS hardening it buys.
+- It can't be verified in this repo: it needs a per-request nonce in middleware,
+  a refactor of the auth-critical `proxy.ts`, and `'strict-dynamic'` interaction
+  with Next's chunk loader and the Serwist service-worker registration — all of
+  which must be confirmed in a real browser against a **production** build
+  (`next build && next start`), since a dev server needs `'unsafe-eval'` for HMR
+  and can't validate the production policy.
+
+**Recipe for when a staging env exists** (follow Next.js's official CSP guide):
+
+1. Split `src/proxy.ts` so the **CSP/nonce header** is set on *all* routes while
+   the **auth redirect** stays scoped to the protected matcher — today they're
+   fused, and widening the matcher would redirect every public page to
+   `/acceso`. Do this first.
+2. Per request, generate a nonce, set
+   `script-src 'self' 'nonce-<n>' 'strict-dynamic'` (plus the §7 static
+   directives, an `img-src` allowlist for the OSM tile host, and a `connect-src`
+   allowlist for the Supabase URL), and pass the nonce via an `x-nonce` request
+   header. Keep the policy permissive (or report-only) in `NODE_ENV !==
+   'production'`.
+3. Load a production build in a browser, open the console, and iterate until
+   **zero** CSP violations across: home, SOS submit, the Leaflet map (tiles +
+   markers), responder login, and the coordinator dashboard. Only then remove
+   the static CSP from `next.config.mjs` (middleware now owns it).
+
+Start in `Content-Security-Policy-Report-Only` mode so violations are logged but
+nothing is blocked; promote to enforcing only once the report is clean.
