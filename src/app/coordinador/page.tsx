@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import {
   assignNeed,
+  setAssignmentStatus,
   setResponderActive,
   setResponderRole,
   signOut,
@@ -12,11 +13,11 @@ import { LiveNeeds } from "@/components/panel/LiveNeeds";
 import { triageNeeds, type Triage } from "@/lib/ai/triage";
 import { createClient } from "@/lib/supabase/server";
 import {
+  ASSIGNMENT_STATUS_LABEL,
   NEED_CATEGORY_LABEL,
   NEED_STATUS_LABEL,
   URGENCIES,
 } from "@/lib/domain";
-import { ASSIGNMENT_STATUS_LABEL } from "@/lib/domain";
 import { timeAgo, VERIFICATION_LABEL } from "@/lib/format";
 import type { Database } from "@/types/database";
 
@@ -29,7 +30,7 @@ type Profile = Pick<
 >;
 type Assignment = Pick<
   Database["public"]["Tables"]["assignments"]["Row"],
-  "need_id" | "responder_id" | "status"
+  "id" | "need_id" | "responder_id" | "status"
 >;
 
 const URGENCY_LABEL = Object.fromEntries(
@@ -59,7 +60,11 @@ function VerifyButton({
   );
 }
 
-type AssignedTo = { name: string; status: Assignment["status"] };
+type AssignedTo = {
+  id: string;
+  name: string;
+  status: Assignment["status"];
+};
 
 function NeedCard({
   n,
@@ -128,14 +133,28 @@ function NeedCard({
         <ul className="mt-3 flex flex-wrap gap-2 text-sm">
           {assignedTo.map((a) => (
             <li
-              key={a.name}
-              className="rounded-full bg-night/40 px-3 py-1 text-foreground"
+              key={a.id}
+              className="flex items-center gap-1.5 rounded-full bg-night/40 py-1 pl-3 pr-1 text-foreground"
             >
-              {a.name}
-              <span className="text-muted">
-                {" · "}
-                {ASSIGNMENT_STATUS_LABEL[a.status]}
+              <span>
+                {a.name}
+                <span className="text-muted">
+                  {" · "}
+                  {ASSIGNMENT_STATUS_LABEL[a.status]}
+                </span>
               </span>
+              <form action={setAssignmentStatus}>
+                <input type="hidden" name="id" value={a.id} />
+                <input type="hidden" name="status" value="cancelled" />
+                <button
+                  type="submit"
+                  aria-label={`Cancelar asignación de ${a.name}`}
+                  title="Cancelar asignación"
+                  className="flex size-6 items-center justify-center rounded-full text-muted hover:bg-night/60 hover:text-foreground"
+                >
+                  ×
+                </button>
+              </form>
             </li>
           ))}
         </ul>
@@ -285,7 +304,10 @@ export default async function CoordinadorPage() {
         .from("profiles")
         .select("id, display_name, role, is_active, organization")
         .order("display_name"),
-      supabase.from("assignments").select("need_id, responder_id, status"),
+      supabase
+        .from("assignments")
+        .select("id, need_id, responder_id, status")
+        .neq("status", "cancelled"),
     ]);
 
   const needs = (needsData ?? []) as Need[];
@@ -306,7 +328,7 @@ export default async function CoordinadorPage() {
     if (!name) continue;
     assignedByNeed.set(a.need_id, [
       ...(assignedByNeed.get(a.need_id) ?? []),
-      { name, status: a.status },
+      { id: a.id, name, status: a.status },
     ]);
   }
 
