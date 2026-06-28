@@ -50,6 +50,7 @@ export const config = {
     "/panel/:path*",
     "/coordinador/:path*",
     "/recursos/:path*",
+    "/seguridad/:path*",
     "/api/route",
   ],
 };

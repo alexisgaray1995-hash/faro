@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import {
   assignNeed,
@@ -289,6 +290,14 @@ export default async function CoordinadorPage() {
     );
   }
 
+  // If this coordinator has enrolled TOTP, force the session up to aal2 before
+  // showing dispatch. Not enrolled → currentLevel === nextLevel === "aal1", so
+  // this never blocks someone who hasn't opted in.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+    redirect("/seguridad");
+  }
+
   const [{ data: needsData }, { data: rosterData }, { data: asgData }] =
     await Promise.all([
       supabase
@@ -345,6 +354,9 @@ export default async function CoordinadorPage() {
         <div className="flex items-center gap-4">
           <Link href="/recursos" className="text-sm text-muted underline">
             Recursos
+          </Link>
+          <Link href="/seguridad" className="text-sm text-muted underline">
+            Seguridad
           </Link>
           <form action={signOut}>
             <button type="submit" className="text-sm text-muted underline">
