@@ -16,6 +16,7 @@ import {
   NEED_STATUS_LABEL,
   URGENCIES,
 } from "@/lib/domain";
+import { ASSIGNMENT_STATUS_LABEL } from "@/lib/domain";
 import { timeAgo, VERIFICATION_LABEL } from "@/lib/format";
 import type { Database } from "@/types/database";
 
@@ -28,7 +29,7 @@ type Profile = Pick<
 >;
 type Assignment = Pick<
   Database["public"]["Tables"]["assignments"]["Row"],
-  "need_id" | "responder_id"
+  "need_id" | "responder_id" | "status"
 >;
 
 const URGENCY_LABEL = Object.fromEntries(
@@ -58,15 +59,17 @@ function VerifyButton({
   );
 }
 
+type AssignedTo = { name: string; status: Assignment["status"] };
+
 function NeedCard({
   n,
   responders,
-  assignedNames,
+  assignedTo,
   suggestion,
 }: {
   n: Need;
   responders: Profile[];
-  assignedNames: string[];
+  assignedTo: AssignedTo[];
   suggestion?: Triage;
 }) {
   // Only surface the AI when it disagrees with what the citizen selected — a
@@ -121,10 +124,21 @@ function NeedCard({
         )}
       </div>
 
-      {assignedNames.length > 0 && (
-        <p className="mt-3 text-sm text-muted">
-          Asignado a: {assignedNames.join(", ")}
-        </p>
+      {assignedTo.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+          {assignedTo.map((a) => (
+            <li
+              key={a.name}
+              className="rounded-full bg-night/40 px-3 py-1 text-foreground"
+            >
+              {a.name}
+              <span className="text-muted">
+                {" · "}
+                {ASSIGNMENT_STATUS_LABEL[a.status]}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {responders.length > 0 && (
@@ -271,7 +285,7 @@ export default async function CoordinadorPage() {
         .from("profiles")
         .select("id, display_name, role, is_active, organization")
         .order("display_name"),
-      supabase.from("assignments").select("need_id, responder_id"),
+      supabase.from("assignments").select("need_id, responder_id, status"),
     ]);
 
   const needs = (needsData ?? []) as Need[];
@@ -283,12 +297,17 @@ export default async function CoordinadorPage() {
   // unaffected if no AI box is configured.
   const suggestions = await triageNeeds(needs);
 
-  const nameById = new Map(responders.map((r) => [r.id, r.display_name]));
-  const namesByNeed = new Map<string, string[]>();
+  // Show the assignee against every responder, active or not (someone
+  // deactivated mid-task still appears on their need until reassigned).
+  const nameById = new Map(roster.map((r) => [r.id, r.display_name]));
+  const assignedByNeed = new Map<string, AssignedTo[]>();
   for (const a of assignments) {
     const name = nameById.get(a.responder_id);
     if (!name) continue;
-    namesByNeed.set(a.need_id, [...(namesByNeed.get(a.need_id) ?? []), name]);
+    assignedByNeed.set(a.need_id, [
+      ...(assignedByNeed.get(a.need_id) ?? []),
+      { name, status: a.status },
+    ]);
   }
 
   return (
@@ -334,7 +353,7 @@ export default async function CoordinadorPage() {
               key={n.id}
               n={n}
               responders={responders}
-              assignedNames={namesByNeed.get(n.id) ?? []}
+              assignedTo={assignedByNeed.get(n.id) ?? []}
               suggestion={suggestions.get(n.id)}
             />
           ))}

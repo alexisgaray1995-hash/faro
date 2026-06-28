@@ -106,6 +106,36 @@ export async function assignNeed(formData: FormData) {
   revalidatePath("/coordinador");
 }
 
+// A responder advances their own assignment (accepted → en_route → completed);
+// a coordinator can also cancel. RLS enforces who may touch which row — this just
+// validates the target status and refreshes both dashboards so the change is live.
+const ASSIGNMENT_STATUSES = [
+  "assigned",
+  "accepted",
+  "en_route",
+  "completed",
+  "cancelled",
+] as const;
+
+export async function setAssignmentStatus(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (
+    !id ||
+    !(ASSIGNMENT_STATUSES as readonly string[]).includes(status)
+  ) {
+    return;
+  }
+
+  const supabase = await createClient();
+  await supabase
+    .from("assignments")
+    .update({ status: status as (typeof ASSIGNMENT_STATUSES)[number] })
+    .eq("id", id);
+  revalidatePath("/panel");
+  revalidatePath("/coordinador");
+}
+
 // Self-claim a need off the queue. The .is("claimed_by", null) makes this
 // atomic: if two responders tap "Tomar" at once, Postgres lets exactly one
 // match the row, so they can't both grab the same person.

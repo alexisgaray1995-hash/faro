@@ -18,17 +18,24 @@ export function LiveNeeds() {
     const supabase = createClient();
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    // Coalesce bursts (a batch sync, or an assignment moving through statuses)
+    // into one refresh so we don't thrash the server.
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => router.refresh(), 400);
+    };
+
     const channel = supabase
       .channel("needs-live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "needs" },
-        () => {
-          // Coalesce bursts (e.g. a batch sync flushing many needs) into one
-          // refresh so we don't thrash the server.
-          clearTimeout(timer);
-          timer = setTimeout(() => router.refresh(), 400);
-        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assignments" },
+        refresh,
       )
       .subscribe();
 

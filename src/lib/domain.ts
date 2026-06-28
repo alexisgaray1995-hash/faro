@@ -16,6 +16,29 @@ export const NEED_STATUS_LABEL: Record<NeedStatus, string> = {
   expired: "Expirado",
 };
 
+export type AssignmentStatus = Enums["assignment_status"];
+
+export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
+  assigned: "Asignado",
+  accepted: "Aceptado",
+  en_route: "En camino",
+  completed: "Completado",
+  cancelled: "Cancelado",
+};
+
+// The forward step a responder can take from each status (null = terminal).
+// Drives the single progress button on the panel.
+export const NEXT_ASSIGNMENT_STATUS: Record<
+  AssignmentStatus,
+  AssignmentStatus | null
+> = {
+  assigned: "accepted",
+  accepted: "en_route",
+  en_route: "completed",
+  completed: null,
+  cancelled: null,
+};
+
 export const NEED_CATEGORIES: { value: NeedCategory; label: string }[] = [
   { value: "rescue", label: "Rescate" },
   { value: "medical", label: "Médico" },
